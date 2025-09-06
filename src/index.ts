@@ -1,5 +1,5 @@
 const host = "0.0.0.0";
-const port = 8080;
+const port = 80;
 
 import { Proxy } from "http-mitm-proxy";
 const proxy = new Proxy();
@@ -27,23 +27,23 @@ proxy.onRequestData(
   (
     ctx,
     chunk,
-    callback, //console.log('request data length: ' + chunk.length);
-  ) => callback(null, chunk),
+    callback //console.log('request data length: ' + chunk.length);
+  ) => callback(null, chunk)
 );
 
 proxy.onResponse(
   (
     ctx,
-    callback, //console.log('RESPONSE: http://' + ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url);
-  ) => callback(null),
+    callback //console.log('RESPONSE: http://' + ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url);
+  ) => callback(null)
 );
 
 proxy.onResponseData(
   (
     ctx,
     chunk,
-    callback, //console.log('response data length: ' + chunk.length);
-  ) => callback(null, chunk),
+    callback //console.log('response data length: ' + chunk.length);
+  ) => callback(null, chunk)
 );
 
 proxy.listen({ port, host });
