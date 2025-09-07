@@ -2,24 +2,34 @@ const host = "0.0.0.0";
 const port = 80;
 
 import { Proxy } from "http-mitm-proxy";
+import {
+  gameDashboardHandler,
+  gameDashboardMatcher,
+} from "./handlers/game-dashboard";
 const proxy = new Proxy();
+
+function identifyUser(username: string, password: string): string | Error {
+  // Fake implementation: accept all, return the username as the identity
+  console.log(`[IDENTIFY] username="${username}" password="${password}"`);
+  return username;
+}
 
 function getBasicProxyAuthCredentials(req: {
   headers: Record<string, string | string[] | undefined>;
-}): { username: string; password: string } | null {
-  const header = (req.headers["proxy-authorization"] ||
-    req.headers["authorization"]) as string | undefined;
+}): { userId: string; secret: string } | null {
+  const header = (req?.headers?.["proxy-authorization"] ??
+    req?.headers?.["authorization"]) as string | undefined;
   if (!header) return null;
   const [scheme, encoded] = header.split(" ");
   if (!/^basic$/i.test(scheme) || !encoded) return null;
   const decoded = Buffer.from(encoded, "base64").toString("utf8");
   const separatorIndex = decoded.indexOf(":");
   if (separatorIndex < 0) {
-    return { username: decoded, password: "" };
+    return { userId: decoded, secret: "" };
   }
   return {
-    username: decoded.slice(0, separatorIndex),
-    password: decoded.slice(separatorIndex + 1),
+    userId: decoded.slice(0, separatorIndex),
+    secret: decoded.slice(separatorIndex + 1),
   };
 }
 
@@ -29,29 +39,66 @@ proxy.onError((ctx, err, errorKind) => {
   console.error(`${errorKind} on ${url}:`, err);
 });
 
-proxy.onConnect((req, socket, head: Buffer, callback) => {
-  console.log(req.headers);
+proxy.onConnect((req, socket, _: Buffer, callback) => {
+  const creds = getBasicProxyAuthCredentials(req as any);
+  if (!creds) {
+    console.error("[AUTH][CONNECT] no credentials");
+    const res =
+      "HTTP/1.1 407 Proxy Authentication Required\r\n" +
+      'Proxy-Authenticate: Basic realm="Splashin"\r\n' +
+      "Connection: close\r\n" +
+      "Proxy-Connection: close\r\n" +
+      "Content-Length: 0\r\n" +
+      "\r\n";
+    socket.write(res);
+    socket.end();
+    return;
+  }
+  const identity = identifyUser(creds.userId, creds.secret);
+  if (identity instanceof Error) {
+    console.error("[AUTH][CONNECT] invalid credentials");
+    const res =
+      "HTTP/1.1 403 Forbidden\r\n" +
+      "Connection: close\r\n" +
+      "Proxy-Connection: close\r\n" +
+      "Content-Length: 0\r\n" +
+      "\r\n";
+    socket.write(res);
+    socket.end();
+    return;
+  }
+  socket.once("close", () => {
+    // no-op for now
+  });
+  console.log(`[AUTH][CONNECT] identity="${identity}" (accepted)`);
   callback();
 });
 
-proxy.onRequest((ctx, callback) => {
-  const creds = getBasicProxyAuthCredentials(ctx.clientToProxyRequest as any);
+proxy.onRequest(async (ctx, callback) => {
+  const host = ctx.clientToProxyRequest.headers.host;
+  const creds = getBasicProxyAuthCredentials(ctx.connectRequest);
   if (!creds) {
-    console.log("[AUTH] no Proxy-Authorization header provided → sending 407");
-    console.log(ctx.clientToProxyRequest.headers);
-    ctx.proxyToClientResponse.writeHead(407, {
-      "Proxy-Authenticate": 'Basic realm="Splashin"',
-      Connection: "close",
-      "Proxy-Connection": "close",
-      "Content-Length": 0,
-    });
-    ctx.proxyToClientResponse.end();
-    return; // do not continue pipeline
+    console.error(
+      "[AUTH][REQUEST] no credentials",
+      `${host}${ctx.clientToProxyRequest.url}`,
+    );
+    if (!host.includes(process.env.IP_ADDR)) return callback();
+    else console.error("Stopping circular request");
+  }
+  const userId = creds.userId;
+  console.log(
+    `[${ctx.clientToProxyRequest.method}][${userId}] ${
+      ctx.clientToProxyRequest.headers.host
+    }${ctx.clientToProxyRequest.url.slice(0, 50)}`,
+  );
+
+  const url = ctx.clientToProxyRequest.url;
+  if (gameDashboardMatcher.test(url)) {
+    console.log("Detected dashboard request");
+    await gameDashboardHandler(ctx, callback);
+    return; // Don't call callback() - we're handling this completely
   }
 
-  console.log(
-    `[AUTH] username="${creds.username}" password="${creds.password}" (accepted)`,
-  );
   //console.log('REQUEST: http://' + ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url);
   // if (["PUT", "POST"].includes(ctx.clientToProxyRequest.method)) {
   //   console.log(ctx.clientToProxyRequest.read());
@@ -67,10 +114,7 @@ proxy.onRequest((ctx, callback) => {
   //     return callback(null, chunk);
   //   });
   // }
-  console.log(`[HEADERS] ${ctx.clientToProxyRequest.headers}`);
-  console.log(
-    `[${ctx.clientToProxyRequest.method}] ${ctx.clientToProxyRequest.url}`,
-  );
+
   return callback();
 });
 
@@ -86,7 +130,18 @@ proxy.onResponse(
   (
     ctx,
     callback, //console.log('RESPONSE: http://' + ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url);
-  ) => callback(null),
+  ) => {
+    if (gameDashboardMatcher.test(ctx.clientToProxyRequest.url)) {
+      console.log("Response stuff");
+      try {
+        console.log("[RESPONSE HEADERS]", ctx.serverToProxyResponse.headers);
+      } catch (err) {
+        console.error("Something went awry!", err);
+      }
+    }
+
+    callback(null);
+  },
 );
 
 proxy.onResponseData(
@@ -97,5 +152,5 @@ proxy.onResponseData(
   ) => callback(null, chunk),
 );
 
-proxy.listen({ port, host });
+proxy.listen({ port, host, keepAlive: true });
 console.log(`listening on ${port}`);
