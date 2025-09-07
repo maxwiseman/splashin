@@ -14,6 +14,10 @@ function identifyUser(username: string, password: string): string | Error {
   return username;
 }
 
+function isIP(str: string): boolean {
+  return /^\d+\.\d+\.\d+\.\d+$/.test(str);
+}
+
 function getBasicProxyAuthCredentials(req: {
   headers: Record<string, string | string[] | undefined>;
 }): { userId: string; secret: string } | null {
@@ -82,8 +86,12 @@ proxy.onRequest(async (ctx, callback) => {
       "[AUTH][REQUEST] no credentials",
       `${host}${ctx.clientToProxyRequest.url}`,
     );
-    if (!host.includes(process.env.IP_ADDR)) return callback();
-    else console.error("Stopping circular request");
+    if (!host || isIP(host.split(':')[0])) {
+      console.error("Stopping circular request");
+      return;
+    } else {
+      return callback();
+    }
   }
   const userId = creds.userId;
   console.log(
