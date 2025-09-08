@@ -86,8 +86,9 @@ proxy.onRequest(async (ctx, callback) => {
       "[AUTH][REQUEST] no credentials",
       `${host}${ctx.clientToProxyRequest.url}`,
     );
-    if (!host || isIP(host.split(':')[0])) {
+    if (!host || isIP(host.split(":")[0])) {
       console.error("Stopping circular request");
+      ctx.proxyToClientResponse.end();
       return;
     } else {
       return callback();
