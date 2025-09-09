@@ -1,5 +1,5 @@
 {
-  "name": "@acme/proxy",
+  "name": "@splashin/proxy",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -14,18 +14,18 @@
     "start": "tsx src/index.ts"
   },
   "devDependencies": {
-    "@acme/eslint-config": "workspace:*",
-    "@acme/prettier-config": "workspace:*",
-    "@acme/tsconfig": "workspace:*",
+    "@splashin/eslint-config": "workspace:*",
+    "@splashin/prettier-config": "workspace:*",
+    "@splashin/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
   "dependencies": {
-    "ts-node-dev": "^2.0.0",
-    "tsx": "^4.20.5",
     "dotenv": "^17.2.2",
-    "http-mitm-proxy": "^1.1.0"
+    "http-mitm-proxy": "^1.1.0",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.20.5"
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@splashin/prettier-config"
 }

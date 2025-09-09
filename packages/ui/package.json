@@ -1,5 +1,5 @@
 {
-  "name": "@acme/ui",
+  "name": "@splashin/ui",
   "private": true,
   "type": "module",
   "exports": {
@@ -31,10 +31,10 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@acme/eslint-config": "workspace:*",
-    "@acme/prettier-config": "workspace:*",
-    "@acme/tailwind-config": "workspace:*",
-    "@acme/tsconfig": "workspace:*",
+    "@splashin/eslint-config": "workspace:*",
+    "@splashin/prettier-config": "workspace:*",
+    "@splashin/tailwind-config": "workspace:*",
+    "@splashin/tsconfig": "workspace:*",
     "@types/react": "catalog:react19",
     "eslint": "catalog:",
     "prettier": "catalog:",
@@ -46,5 +46,5 @@
     "react": "catalog:react19",
     "zod": "catalog:"
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@splashin/prettier-config"
 }
