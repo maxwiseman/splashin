@@ -1,22 +1,38 @@
 {
-  "name": "test",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "name": "create-t3-turbo",
+  "private": true,
+  "engines": {
+    "node": ">=22.19.0",
+    "pnpm": ">=10.15.1"
+  },
+  "packageManager": "pnpm@10.15.1",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev --env-file=.env --respawn --transpile-only src/index.ts",
-    "start": "ts-node src/index.ts"
+    "build": "turbo run build",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspaces": "turbo run clean",
+    "auth:generate": "pnpm -F @acme/auth generate",
+    "db:push": "turbo -F @acme/db push",
+    "db:studio": "turbo -F @acme/db studio",
+    "start:proxy": "turbo watch start -F @acme/proxy...",
+    "dev": "turbo watch dev --continue",
+    "dev:next": "turbo watch dev -F @acme/nextjs...",
+    "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
+    "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
+    "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
+    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
+    "lint:ws": "pnpm dlx sherif@latest",
+    "postinstall": "pnpm lint:ws",
+    "typecheck": "turbo run typecheck",
+    "ui-add": "turbo run ui-add",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "devDependencies": {
-    "@types/node": "^24.3.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2"
+    "@acme/prettier-config": "workspace:*",
+    "@turbo/gen": "^2.5.6",
+    "prettier": "catalog:",
+    "turbo": "^2.5.6",
+    "typescript": "catalog:"
   },
-  "dependencies": {
-    "http-mitm-proxy": "^1.1.0"
-  }
+  "prettier": "@acme/prettier-config"
 }

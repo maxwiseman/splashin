@@ -1,11 +1,13 @@
-const host = "0.0.0.0";
-const port = 8080;
-
 import { Proxy } from "http-mitm-proxy";
+
 import {
   gameDashboardHandler,
   gameDashboardMatcher,
 } from "./handlers/game-dashboard";
+
+const host = "0.0.0.0";
+const port = 8080;
+
 const proxy = new Proxy();
 
 function identifyUser(username: string, password: string): string | Error {
@@ -25,7 +27,7 @@ function getBasicProxyAuthCredentials(req: {
     req?.headers?.["authorization"]) as string | undefined;
   if (!header) return null;
   const [scheme, encoded] = header.split(" ");
-  if (!/^basic$/i.test(scheme) || !encoded) return null;
+  if (!/^basic$/i.test(scheme ?? "") || !encoded) return null;
   const decoded = Buffer.from(encoded, "base64").toString("utf8");
   const separatorIndex = decoded.indexOf(":");
   if (separatorIndex < 0) {
@@ -86,7 +88,7 @@ proxy.onRequest(async (ctx, callback) => {
       "[AUTH][REQUEST] no credentials",
       `${host}${ctx.clientToProxyRequest.url}`,
     );
-    if (!host || isIP(host.split(":")[0])) {
+    if (!host || isIP(host.split(":")[0] ?? "")) {
       console.error("Stopping circular request");
       ctx.proxyToClientResponse.end();
       return;
@@ -98,11 +100,11 @@ proxy.onRequest(async (ctx, callback) => {
   console.log(
     `[${ctx.clientToProxyRequest.method}][${userId}] ${
       ctx.clientToProxyRequest.headers.host
-    }${ctx.clientToProxyRequest.url.slice(0, 50)}`,
+    }${ctx.clientToProxyRequest.url?.slice(0, 50)}`,
   );
 
   const url = ctx.clientToProxyRequest.url;
-  if (gameDashboardMatcher.test(url)) {
+  if (gameDashboardMatcher.test(url ?? "")) {
     console.log("Detected dashboard request");
     await gameDashboardHandler(ctx, callback);
     return; // Don't call callback() - we're handling this completely
@@ -140,10 +142,10 @@ proxy.onResponse(
     ctx,
     callback, //console.log('RESPONSE: http://' + ctx.clientToProxyRequest.headers.host + ctx.clientToProxyRequest.url);
   ) => {
-    if (gameDashboardMatcher.test(ctx.clientToProxyRequest.url)) {
+    if (gameDashboardMatcher.test(ctx.clientToProxyRequest.url ?? "")) {
       console.log("Response stuff");
       try {
-        console.log("[RESPONSE HEADERS]", ctx.serverToProxyResponse.headers);
+        console.log("[RESPONSE HEADERS]", ctx.serverToProxyResponse?.headers);
       } catch (err) {
         console.error("Something went awry!", err);
       }
