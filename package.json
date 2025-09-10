@@ -13,7 +13,7 @@
     "auth:generate": "pnpm -F @splashin/auth generate",
     "db:push": "turbo -F @splashin/db push",
     "db:studio": "turbo -F @splashin/db studio",
-    "start:proxy": "turbo watch start -F @splashin/proxy... --no-daemon",
+    "start:proxy": "turbo watch start -F @splashin/proxy...",
     "start:proxy:vps": "pnpm -F @splashin/proxy start",
     "dev": "turbo watch dev --continue",
     "dev:next": "turbo watch dev -F @splashin/nextjs...",

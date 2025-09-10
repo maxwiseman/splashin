@@ -1,34 +1,77 @@
-import { ErrorCallback, IContext } from "http-mitm-proxy";
-import { GameDashboardResponse } from "./types";
+import { db } from "@splashin/db/client";
 import {
-  createProxyHandler,
+  splashinTarget,
+  splashinTeam,
+  splashinUser,
+} from "@splashin/db/schema";
+import { ErrorCallback, IContext } from "http-mitm-proxy";
+
+import {
   createJsonModifier,
+  createProxyHandler,
 } from "../utils/compression-handler";
+import { GameDashboardResponse } from "./types";
 
 export const gameDashboardMatcher =
   /\/api\/v3\/games\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/dashboard/gi;
 
 // Create a data modifier function for game dashboard
-const gameDashboardModifier = createJsonModifier(
-  (json: GameDashboardResponse) => {
-    console.log("Game dashboard JSON keys:", Object.keys(json));
+const gameDashboardModifier = createJsonModifier(async function* (
+  json: GameDashboardResponse,
+) {
+  console.log("Game dashboard JSON keys:", Object.keys(json));
 
-    // Modify the data
-    json.currentPlayer.subscription_level = 10;
-    json.game.join_code = "Volantir";
-    json.premiumCount = 69;
-    json.round = {
-      ...json.round,
-      idx: 69,
-      name: "Round 69",
-    };
-    console.log(
-      `[TARGETS OF ${json.currentPlayer.first_name} ${json.currentPlayer.last_name}]: ${json.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
-    );
+  // Modify the data
+  // json.currentPlayer.subscription_level = 10;
+  json.game.join_code = "Volantir";
+  // json.premiumCount = 69;
+  // json.round = {
+  //   ...json.round,
+  //   idx: 69,
+  //   name: "Round 69",
+  // };
+  console.log(
+    `[TARGETS OF ${json.currentPlayer.first_name} ${json.currentPlayer.last_name}]: ${json.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
+  );
 
-    return json;
-  },
-);
+  yield json;
+
+  console.log("Updating database");
+  await db
+    .insert(splashinTeam)
+    .values(
+      [json.currentPlayer, ...json.targets].map((player) => ({
+        id: player.team_id,
+        name: player.team_name,
+        color: player.team_color,
+      })),
+    )
+    .onConflictDoNothing();
+  await db
+    .insert(splashinUser)
+    .values(
+      [json.currentPlayer, ...json.targets].map((player) => ({
+        id: player.id,
+        firstName: player.first_name,
+        lastName: player.last_name,
+        teamId: player.team_id,
+        profilePicture: player.avatar_path,
+      })),
+    )
+    .onConflictDoNothing();
+  await db
+    .insert(splashinTarget)
+    .values(
+      json.targets.map((target) => ({
+        id: crypto.randomUUID(),
+        userId: json.currentPlayer.id,
+        targetId: target.id,
+        round: json.round.idx.toString(),
+      })),
+    )
+    .onConflictDoNothing();
+  console.log("Database updated");
+});
 
 // Create the proxy handler with our modifier
 const proxyHandler = createProxyHandler({

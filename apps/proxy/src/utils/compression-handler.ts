@@ -1,9 +1,17 @@
-import { ErrorCallback, IContext } from "http-mitm-proxy";
-import * as zlib from "zlib";
-import * as https from "https";
 import * as http from "http";
+import * as https from "https";
+import * as zlib from "zlib";
+import { ErrorCallback, IContext } from "http-mitm-proxy";
 
-export type DataModifier = (decompressedData: string) => string;
+export type DataModifier = (
+  decompressedData: string,
+) => string | Promise<string>;
+export type JsonModifier = (
+  json: any,
+) => any | Generator<any, void, unknown> | AsyncGenerator<any, void, unknown>;
+export type AsyncJsonModifier = (
+  json: any,
+) => AsyncGenerator<any, void, unknown>;
 
 export interface ProxyHandlerOptions {
   /** Function to modify the decompressed data before sending to client */
@@ -51,7 +59,7 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
 
     if (logData) {
       console.log(
-        `[${logPrefix}] Making request to: ${options.hostname}${options.path}`
+        `[${logPrefix}] Making request to: ${options.hostname}${options.path}`,
       );
     }
 
@@ -69,7 +77,7 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
 
       ctx.proxyToClientResponse.writeHead(
         proxyRes.statusCode || 200,
-        responseHeaders
+        responseHeaders,
       );
 
       let responseBuffer = Buffer.alloc(0);
@@ -83,7 +91,7 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
           if (logData) {
             console.log(
               `[${logPrefix}] Raw response buffer length:`,
-              responseBuffer.length
+              responseBuffer.length,
             );
           }
 
@@ -114,30 +122,44 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
           if (logData) {
             console.log(
               `[${logPrefix}] Decompressed data length:`,
-              decompressedData.length
+              decompressedData.length,
             );
             console.log(
               `[${logPrefix}] First 200 chars:`,
-              decompressedData.substring(0, 200)
+              decompressedData.substring(0, 200),
             );
           }
 
-          // Apply user's data modification
-          const modifiedData = dataModifier(decompressedData);
+          // Apply user's data modification (might be async)
+          const modifierResult = dataModifier(decompressedData);
 
-          if (logData && modifiedData !== decompressedData) {
-            console.log(`[${logPrefix}] Data was modified`);
-          }
+          // Handle both sync and async results
+          Promise.resolve(modifierResult)
+            .then((modifiedData) => {
+              if (logData && modifiedData !== decompressedData) {
+                console.log(`[${logPrefix}] Data was modified`);
+              }
 
-          // Send modified response to client
-          ctx.proxyToClientResponse.write(modifiedData);
-          ctx.proxyToClientResponse.end();
+              // Send modified response to client (fallback to original if undefined)
+              const responseData = modifiedData ?? decompressedData;
+              ctx.proxyToClientResponse.write(responseData);
+              ctx.proxyToClientResponse.end();
 
-          if (logData) {
-            console.log(
-              `[${logPrefix}] Successfully sent modified response to client`
-            );
-          }
+              if (logData) {
+                console.log(
+                  `[${logPrefix}] Successfully sent modified response to client`,
+                );
+              }
+            })
+            .catch((error) => {
+              console.error(
+                `[${logPrefix}] Error in async data modifier:`,
+                error,
+              );
+              // Send original data on error
+              ctx.proxyToClientResponse.write(decompressedData);
+              ctx.proxyToClientResponse.end();
+            });
         } catch (error) {
           console.error(`[${logPrefix}] Error processing response:`, error);
           // Send original data on error
@@ -169,13 +191,81 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
 
 /**
  * Convenience function for JSON data modification
+ * Supports both regular functions and generator functions
  */
-export function createJsonModifier(modifier: (json: any) => any): DataModifier {
-  return (data: string) => {
+export function createJsonModifier(modifier: JsonModifier): DataModifier {
+  return async (data: string) => {
     try {
       const json = JSON.parse(data);
-      const modifiedJson = modifier(json);
-      return JSON.stringify(modifiedJson);
+      const result = modifier(json);
+
+      // Check if result is a generator (sync or async)
+      if (
+        result &&
+        typeof result === "object" &&
+        typeof result.next === "function"
+      ) {
+        // Check if it's an async generator
+        if (Symbol.asyncIterator in result) {
+          // It's an async generator - await the first yielded value
+          const asyncGenerator = result as AsyncGenerator<any, void, unknown>;
+          const firstResult = await asyncGenerator.next();
+
+          if (!firstResult.done) {
+            // Continue processing in the background
+            setImmediate(async () => {
+              try {
+                let nextResult = await asyncGenerator.next();
+                while (!nextResult.done) {
+                  nextResult = await asyncGenerator.next();
+                }
+              } catch (backgroundError) {
+                console.error(
+                  "Error in background async JSON processing:",
+                  backgroundError,
+                );
+              }
+            });
+
+            // Return the first yielded value immediately
+            return JSON.stringify(firstResult.value ?? json);
+          } else {
+            // Generator completed immediately without yielding
+            return JSON.stringify(json);
+          }
+        } else {
+          // It's a sync generator - get the first yielded value to send immediately
+          const generator = result as Generator<any, void, unknown>;
+          const firstResult = generator.next();
+
+          if (!firstResult.done) {
+            // Continue processing in the background (don't await)
+            setImmediate(async () => {
+              try {
+                // Continue the generator to completion
+                let nextResult = generator.next();
+                while (!nextResult.done) {
+                  nextResult = generator.next();
+                }
+              } catch (backgroundError) {
+                console.error(
+                  "Error in background JSON processing:",
+                  backgroundError,
+                );
+              }
+            });
+
+            // Return the first yielded value immediately
+            return JSON.stringify(firstResult.value ?? json);
+          } else {
+            // Generator completed immediately without yielding
+            return JSON.stringify(json);
+          }
+        }
+      } else {
+        // Regular function result
+        return JSON.stringify(result ?? json);
+      }
     } catch (error) {
       console.error("Error parsing/modifying JSON:", error);
       return data; // Return original data if JSON parsing fails
@@ -184,11 +274,21 @@ export function createJsonModifier(modifier: (json: any) => any): DataModifier {
 }
 
 /**
+ * Convenience function for async JSON data modification with generator
+ * Use this when you want to yield the JSON response immediately and continue processing in the background
+ */
+export function createAsyncJsonModifier(
+  modifier: AsyncJsonModifier,
+): DataModifier {
+  return createJsonModifier(modifier);
+}
+
+/**
  * Convenience function for simple string replacement
  */
 export function createStringModifier(
   searchValue: string | RegExp,
-  replaceValue: string
+  replaceValue: string,
 ): DataModifier {
   return (data: string) => {
     return data.replace(searchValue, replaceValue);

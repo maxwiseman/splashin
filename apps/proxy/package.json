@@ -11,7 +11,8 @@
     "dev": "ts-node-dev --env-file=.env --respawn --transpile-only src/index.ts",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "start": "tsx src/index.ts"
+    "start": "pnpm with-env tsx src/index.ts",
+    "with-env": "dotenv -e ../../.env --"
   },
   "devDependencies": {
     "@splashin/eslint-config": "workspace:*",
@@ -22,6 +23,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@splashin/db": "workspace:*",
     "dotenv": "^17.2.2",
     "http-mitm-proxy": "^1.1.0",
     "ts-node-dev": "^2.0.0",

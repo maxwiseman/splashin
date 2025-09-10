@@ -1,25 +1,120 @@
-import { pgTable } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { pgEnum, pgTable } from "drizzle-orm/pg-core";
 import * as p from "drizzle-orm/pg-core";
 
 import { user } from "./auth-schema";
 
+export const lastActivityType = pgEnum("lastActivityType", [
+  "in_vehicle",
+  "walking",
+  "still",
+  "unknown",
+]);
 export const splashinUser = pgTable("splashin_user", () => ({
-  id: p.uuid().notNull().primaryKey().defaultRandom(),
+  id: p.text().notNull().primaryKey(),
   userId: p.text().references(() => user.id, { onDelete: "set null" }),
   firstName: p.text().notNull(),
   lastName: p.text().notNull(),
+  teamId: p.text().references(() => splashinTeam.id, { onDelete: "set null" }),
   profilePicture: p.text(),
   lastLocation: p.geometry("lastLocation", {
     type: "point",
     mode: "xy",
     srid: 4326,
   }),
+  // lastActivityType: lastActivityType(),
   locationUpdatedAt: p.timestamp(),
   locationPausedUntil: p.timestamp(),
 }));
+export const splashinUserRelations = relations(
+  splashinUser,
+  ({ many, one }) => ({
+    team: one(splashinTeam, {
+      fields: [splashinUser.teamId],
+      references: [splashinTeam.id],
+    }),
+    targets: many(splashinTarget, {
+      relationName: "userTargets",
+    }),
+    eliminations: many(splashinElimination, {
+      relationName: "userEliminations",
+    }),
+  }),
+);
+
+export const splashinTeam = pgTable("splashin_team", () => ({
+  id: p.text().notNull().primaryKey(),
+  name: p.text().notNull(),
+  color: p.text().notNull(),
+}));
+export const splashinTeamRelations = relations(splashinTeam, ({ many }) => ({
+  users: many(splashinUser),
+}));
+
+export const splashinElimination = pgTable(
+  "splashin_elimination",
+  () => ({
+    round: p.numeric().notNull(),
+    userId: p
+      .text()
+      .references(() => splashinUser.id, { onDelete: "set null" }),
+    eliminatedBy: p
+      .text()
+      .references(() => splashinUser.id, { onDelete: "set null" }),
+    eliminatedAt: p.timestamp().notNull(),
+  }),
+  (table) => [
+    p.primaryKey({ columns: [table.round, table.userId, table.eliminatedBy] }),
+  ],
+);
+export const splashinEliminationRelations = relations(
+  splashinElimination,
+  ({ one }) => ({
+    user: one(splashinUser, {
+      fields: [splashinElimination.userId],
+      references: [splashinUser.id],
+      relationName: "userEliminations",
+    }),
+    eliminatedBy: one(splashinUser, {
+      fields: [splashinElimination.eliminatedBy],
+      references: [splashinUser.id],
+      relationName: "eliminatedByUser",
+    }),
+  }),
+);
+
+export const splashinTarget = pgTable(
+  "splashin_target",
+  () => ({
+    round: p.numeric().notNull(),
+    userId: p
+      .text()
+      .notNull()
+      .references(() => splashinUser.id, { onDelete: "cascade" }),
+    targetId: p
+      .text()
+      .notNull()
+      .references(() => splashinUser.id, { onDelete: "cascade" }),
+  }),
+  (table) => [
+    p.primaryKey({ columns: [table.round, table.userId, table.targetId] }),
+  ],
+);
+export const splashinTargetRelations = relations(splashinTarget, ({ one }) => ({
+  user: one(splashinUser, {
+    fields: [splashinTarget.userId],
+    references: [splashinUser.id],
+    relationName: "userTargets",
+  }),
+  target: one(splashinUser, {
+    fields: [splashinTarget.targetId],
+    references: [splashinUser.id],
+    relationName: "targetedBy",
+  }),
+}));
 
 // export const Post = pgTable("post", (t) => ({
-//   id: t.uuid().notNull().primaryKey().defaultRandom(),
+//   id: t.text().notNull().primaryKey().defaultRandom(),
 //   title: t.varchar({ length: 256 }).notNull(),
 //   content: t.text().notNull(),
 //   createdAt: t.timestamp().defaultNow().notNull(),
