@@ -4,7 +4,7 @@ import { TargetNetwork } from "~/components/target-network";
 export default function HomePage() {
   return (
     <div className="size-full">
-      <TargetNetwork />
+      {/* <TargetNetwork /> */}
       {/* <PlayerMap /> */}
     </div>
   );
