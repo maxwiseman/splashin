@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cn } from "@splashin/ui";
 import { ThemeProvider, ThemeToggle } from "@splashin/ui/theme";
 import { Toaster } from "@splashin/ui/toast";
+import { Analytics } from "@vercel/analytics/next";
 
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/trpc/react";
@@ -62,6 +63,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
           </div>
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
