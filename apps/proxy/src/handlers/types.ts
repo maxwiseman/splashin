@@ -1,3 +1,65 @@
+export interface PlayerRequest {
+  cursor: number;
+  players: Player[];
+  teams: Team[];
+  stats: Stats;
+}
+
+export interface Stats {
+  player_count: string;
+  eliminated_count: string;
+  bounty_count: string;
+  safe_count: string;
+  unpaid_count: string;
+  location_disabled_count: string;
+  active_player_count: string;
+  join_request_count: string;
+  target_count: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  color: string;
+  created_by: string;
+  leaderboard_position: null;
+  points: number;
+  player_limit: number;
+  player_count: string;
+  players: Player[];
+}
+
+export interface Player {
+  id: string;
+  subscription_level: number;
+  first_name: string;
+  last_name: string;
+  avatar_path: null | string;
+  avatar_path_medium: null;
+  avatar_path_small: null | string;
+  location_enabled: boolean;
+  eliminated: boolean;
+  eliminated_at: null;
+  eliminated_by: null;
+  is_bounty: boolean;
+  is_safe: boolean;
+  is_safe_expires_at: null;
+  marked_safe: null;
+  active_in_round: boolean;
+  safe_from_purge: boolean;
+  player_points: number;
+  location_updated_at: Date | null;
+  is_paid: boolean;
+  marked_paid_by_name: string;
+  elimination_count: number;
+  points: number;
+  player_leaderboard_position: null;
+  team_name: string;
+  team_color: string;
+  team_id: string;
+}
+
+// Extended types based on base types
 export type GetLocationByIdResponse = LocationById[];
 export interface LocationById {
   u: string;
@@ -35,45 +97,24 @@ export interface GameDashboardResponse {
   winner: Winner;
   targets: Target[];
   bounties: any[];
-  myTeam: MyTeam[];
+  myTeam: Player[]; // Now using base Player type
   latestActivity: LatestActivity;
   isLocationApprovalsPending: boolean;
   trialAvailable: boolean;
   trialExpiresAt: null;
   promptConversion: boolean;
   premiumCount: number;
+  stats?: Stats; // Optional stats field
 }
 
-export interface CurrentPlayer {
-  id: string;
-  subscription_level: number;
-  first_name: string;
-  last_name: string;
-  avatar_path: string;
-  avatar_path_medium: null;
-  avatar_path_small: string;
-  location_enabled: boolean;
-  eliminated: boolean;
-  eliminated_at: null;
-  eliminated_by: null;
-  marked_safe: boolean;
-  active_in_round: boolean;
-  safe_from_purge: boolean;
-  team_name: string;
-  team_id: string;
-  team_color: string;
+// CurrentPlayer extends Player with additional current user specific fields
+export interface CurrentPlayer extends Player {
   team_created_by: string;
-  location_updated_at: Date;
-  elimination_count: number;
-  is_safe: boolean;
-  is_safe_expires_at: null;
   is_vanished: boolean;
   is_vanished_expires_at: null;
   is_trace: boolean;
   is_trace_expires_at: null;
-  is_bounty: boolean;
   is_bounty_expires_at: null;
-  points: number;
   last_location_access_approval_at: Date;
   trial_available: boolean;
   prompt_conversion: boolean;
@@ -140,36 +181,6 @@ export interface Pending {
   thumbnail: null;
 }
 
-export interface MyTeam {
-  id: string;
-  team_leaderboard_position: null;
-  team_points: number;
-  subscription_level: number;
-  first_name: string;
-  last_name: string;
-  avatar_path: string;
-  avatar_path_medium: null;
-  avatar_path_small: string;
-  location_enabled: boolean;
-  eliminated: boolean;
-  eliminated_at: null;
-  eliminated_by: null;
-  marked_safe: boolean;
-  is_safe: boolean;
-  is_vanished: boolean;
-  is_trace: boolean;
-  is_bounty: boolean;
-  active_in_round: boolean;
-  safe_from_purge: boolean;
-  team_name: string;
-  team_id: string;
-  team_color: string;
-  team_created_by: string;
-  location_updated_at: Date;
-  elimination_count: number;
-  player_points: number;
-}
-
 export interface Round {
   id: string;
   idx: number;
@@ -179,32 +190,15 @@ export interface Round {
   time_zone: string;
 }
 
-export interface Target {
-  id: string;
+// Target extends Player with target-specific fields
+export interface Target extends Player {
   target_id: string;
   user_id: string;
-  avatar_path: string;
-  avatar_path_medium: null;
-  avatar_path_small: string;
-  subscription_level: number;
-  first_name: string;
-  last_name: string;
   city: string;
   region: string;
   user_location_updated_at: Date;
   battery_level: number;
   battery_is_charging: boolean;
-  location_enabled: boolean;
-  team_id: string;
-  team_name: string;
-  team_color: string;
-  eliminated: boolean;
-  marked_safe: boolean;
-  is_safe: boolean;
-  is_vanished: boolean;
-  is_trace: boolean;
-  is_bounty: boolean;
-  safe_from_purge: boolean;
 }
 
 export interface Winner {

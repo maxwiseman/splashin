@@ -4,6 +4,11 @@ import {
   gameDashboardHandler,
   gameDashboardMatcher,
 } from "./handlers/game-dashboard";
+import {
+  getLocationByIdHandler,
+  getLocationByIdMatcher,
+} from "./handlers/get-location-by-id";
+import { playersHandler, playersMatcher } from "./handlers/players";
 
 const host = "0.0.0.0";
 const port = 8080;
@@ -81,7 +86,8 @@ proxy.onConnect((req, socket, _: Buffer, callback) => {
 });
 
 proxy.onRequest(async (ctx, callback) => {
-  const host = ctx.clientToProxyRequest.headers.host;
+  const headers = ctx.clientToProxyRequest.headers;
+  const host = headers.host;
   const creds = getBasicProxyAuthCredentials(ctx.connectRequest);
   if (!creds) {
     console.error(
@@ -99,14 +105,26 @@ proxy.onRequest(async (ctx, callback) => {
   const userId = creds.userId;
   console.log(
     `[${ctx.clientToProxyRequest.method}][${userId}] ${
-      ctx.clientToProxyRequest.headers.host
+      host
     }${ctx.clientToProxyRequest.url?.slice(0, 50)}`,
   );
+
+  // if (headers.authorization) {
+  //   await db
+  // }
 
   const url = ctx.clientToProxyRequest.url;
   if (gameDashboardMatcher.test(url ?? "")) {
     console.log("Detected dashboard request");
     await gameDashboardHandler(ctx, callback);
+    return; // Don't call callback() - we're handling this completely
+  } else if (getLocationByIdMatcher.test(url ?? "")) {
+    console.log("Detected location request");
+    await getLocationByIdHandler(ctx, callback);
+    return; // Don't call callback() - we're handling this completely
+  } else if (playersMatcher.test(url ?? "")) {
+    console.log("Detected players request");
+    await playersHandler(ctx, callback);
     return; // Don't call callback() - we're handling this completely
   }
 
