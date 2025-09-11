@@ -88,6 +88,12 @@ proxy.onConnect((req, socket, _: Buffer, callback) => {
 proxy.onRequest(async (ctx, callback) => {
   const headers = ctx.clientToProxyRequest.headers;
   const host = headers.host;
+  const approvedHosts = process.env.APPROVED_HOSTS?.split(",") ?? [];
+  if (!approvedHosts.some((approvedHost) => host?.includes(approvedHost))) {
+    console.error("[AUTH][REQUEST] host not approved", host);
+    ctx.proxyToClientResponse.end();
+    return;
+  }
   const creds = getBasicProxyAuthCredentials(ctx.connectRequest);
   if (!creds) {
     console.error(
