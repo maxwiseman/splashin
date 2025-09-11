@@ -11,12 +11,14 @@ import {
 import { playersHandler, playersMatcher } from "./handlers/players";
 
 const host = "0.0.0.0";
-const port = 8080;
+const port = 9090;
 
 const proxy = new Proxy();
 
 function identifyUser(username: string, password: string): string | Error {
   // Fake implementation: accept all, return the username as the identity
+  if (password !== process.env.AUTH_SECRET)
+    return new Error("Invalid password");
   console.log(`[IDENTIFY] username="${username}" password="${password}"`);
   return username;
 }
