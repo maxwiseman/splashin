@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { pgEnum, pgTable } from "drizzle-orm/pg-core";
 import * as p from "drizzle-orm/pg-core";
 
@@ -22,7 +22,9 @@ export const splashinUser = pgTable("splashin_user", () => ({
     mode: "xy",
     srid: 4326,
   }),
-  // lastActivityType: lastActivityType(),
+  lastActivityType: lastActivityType(),
+  authToken: p.text(),
+  apiKey: p.text(),
   locationUpdatedAt: p.timestamp(),
   locationPausedUntil: p.timestamp(),
 }));
@@ -83,6 +85,11 @@ export const splashinEliminationRelations = relations(
   }),
 );
 
+const splashinTargetSource = pgEnum("splashin_target_source", [
+  "game",
+  "proxy",
+  "word_of_mouth",
+]);
 export const splashinTarget = pgTable(
   "splashin_target",
   () => ({
@@ -95,6 +102,7 @@ export const splashinTarget = pgTable(
       .text()
       .notNull()
       .references(() => splashinUser.id, { onDelete: "cascade" }),
+    source: splashinTargetSource().notNull(),
   }),
   (table) => [
     p.primaryKey({ columns: [table.round, table.userId, table.targetId] }),

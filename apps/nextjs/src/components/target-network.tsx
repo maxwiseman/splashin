@@ -1,8 +1,14 @@
 "use client";
 
+import type {
+  ForceGraphMethods,
+  LinkObject,
+  NodeObject,
+} from "react-force-graph-2d";
 import { useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import {
+
+import type {
   splashinTarget,
   splashinTeam,
   splashinUser,
@@ -16,10 +22,11 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
 const GRAPH_CONFIG = {
   NODE_SIZE: 50,
   LINK_DISTANCE: 100,
-  CHARGE_STRENGTH: -300,
-  COLLISION_RADIUS: 30,
+  CHARGE_STRENGTH: -100,
+  COLLISION_RADIUS: 50,
+  CENTER_STRENGTH: 0.05,
   BORDER_WIDTH: 2,
-  FONT_SIZE_RATIO: 1,
+  FONT_SIZE_RATIO: 0.4,
 } as const;
 
 const COLORS = {
@@ -35,24 +42,25 @@ type PlayerWithTargets = typeof splashinUser.$inferSelect & {
   team: typeof splashinTeam.$inferSelect;
 };
 
-interface GraphNode {
-  id: string;
-  group: number;
+interface TeamAvatar {
   profilePicture: string | null;
   initials: string;
+}
+
+interface TeamGraphNode extends NodeObject {
+  id: string; // team id
   color: string;
-  x?: number;
-  y?: number;
+  avatars: TeamAvatar[]; // up to 2
   __bckgDimensions?: [number, number];
 }
 
-interface GraphLink {
-  source: string;
-  target: string;
+interface GraphLink extends LinkObject {
+  source: string; // team id
+  target: string; // team id
 }
 
 interface GraphData {
-  nodes: GraphNode[];
+  nodes: TeamGraphNode[];
   links: GraphLink[];
 }
 
@@ -85,90 +93,179 @@ function useImageLoader(playersWithTargets: PlayerWithTargets[]) {
   return loadedImages;
 }
 
-function useForceGraphConfig(fgRef: React.RefObject<any>) {
+function useForceGraphConfig(
+  fgRef: React.MutableRefObject<
+    ForceGraphMethods<NodeObject, LinkObject> | undefined
+  >,
+) {
   useEffect(() => {
-    if (fgRef.current) {
-      fgRef.current.d3Force("link")?.distance(GRAPH_CONFIG.LINK_DISTANCE);
-      fgRef.current.d3Force("charge")?.strength(GRAPH_CONFIG.CHARGE_STRENGTH);
-      fgRef.current.d3Force(
-        "collision",
-        fgRef.current.d3?.forceCollide?.(GRAPH_CONFIG.COLLISION_RADIUS),
-      );
-    }
-  }, []);
+    const timer = setTimeout(() => {
+      if (fgRef.current) {
+        // Configure link distance
+        const linkForce = fgRef.current.d3Force("link");
+        if (linkForce && "distance" in linkForce) {
+          linkForce.distance(GRAPH_CONFIG.LINK_DISTANCE);
+        }
+
+        // Configure charge strength
+        const chargeForce = fgRef.current.d3Force("charge");
+        if (chargeForce && "strength" in chargeForce) {
+          chargeForce.strength(GRAPH_CONFIG.CHARGE_STRENGTH);
+        }
+
+        // Configure collision detection
+        const collisionForce = fgRef.current.d3Force("collision");
+        if (collisionForce && "radius" in collisionForce) {
+          collisionForce.radius(GRAPH_CONFIG.COLLISION_RADIUS);
+        }
+
+        // Replace default centering with adjustable x/y forces (no imports)
+        const center = fgRef.current.centerAt();
+        const centerStrength = GRAPH_CONFIG.CENTER_STRENGTH;
+
+        // Remove default center force to avoid competing behaviors
+        fgRef.current.d3Force("center", null);
+
+        // Custom x-axis centering force
+        const forceX = (() => {
+          let nodes: any[] = [];
+          const f = (alpha: number) => {
+            if (centerStrength <= 0) return;
+            const cx = center.x;
+            for (let i = 0, n = nodes.length; i < n; i += 1) {
+              const node = nodes[i];
+              node.vx += (cx - (node.x ?? 0)) * centerStrength * alpha;
+            }
+          };
+          (f as any).initialize = (ns: any[]) => {
+            nodes = ns;
+          };
+          return f;
+        })();
+
+        // Custom y-axis centering force
+        const forceY = (() => {
+          let nodes: any[] = [];
+          const f = (alpha: number) => {
+            if (centerStrength <= 0) return;
+            const cy = center.y;
+            for (let i = 0, n = nodes.length; i < n; i += 1) {
+              const node = nodes[i];
+              node.vy += (cy - (node.y ?? 0)) * centerStrength * alpha;
+            }
+          };
+          (f as any).initialize = (ns: any[]) => {
+            nodes = ns;
+          };
+          return f;
+        })();
+
+        // Apply custom forces
+        fgRef.current.d3Force("x", forceX);
+        fgRef.current.d3Force("y", forceY);
+
+        // Reheat the simulation to apply changes
+        fgRef.current.d3ReheatSimulation?.();
+      }
+    }, 100); // Small delay to ensure graph is initialized
+
+    return () => clearTimeout(timer);
+  }, [fgRef]);
 }
 
 // Helper functions
 function createGraphData(playersWithTargets: PlayerWithTargets[]): GraphData {
-  const nodes: GraphNode[] = playersWithTargets.map((player) => ({
-    id: player.id,
-    group: 1,
-    profilePicture: player.profilePicture,
-    initials:
-      `${player.firstName.charAt(0)}${player.lastName.charAt(0)}`.toUpperCase(),
-    color: player.team.color,
-  }));
+  // Map userId -> teamId for resolving target teams
+  const userIdToTeamId = new Map<string, string>();
+  playersWithTargets.forEach((p) => {
+    if (p.id && p.team && p.team.id) userIdToTeamId.set(p.id, p.team.id);
+  });
 
-  const links: GraphLink[] = playersWithTargets.flatMap((player) =>
-    player.targets.map((target: typeof splashinTarget.$inferSelect) => ({
-      source: player.id,
-      target: target.targetId,
-    })),
+  // Aggregate players by team
+  const teamIdToPlayers = new Map<string, PlayerWithTargets[]>();
+  const teamIdToColor = new Map<string, string>();
+  playersWithTargets.forEach((p) => {
+    const teamId = p.team ? p.team.id : undefined;
+    if (!teamId) return;
+    if (!teamIdToPlayers.has(teamId)) teamIdToPlayers.set(teamId, []);
+    const arr = teamIdToPlayers.get(teamId);
+    if (arr) arr.push(p);
+    teamIdToColor.set(teamId, p.team.color);
+  });
+
+  // Build team nodes with up to 2 avatars
+  const nodes: TeamGraphNode[] = Array.from(teamIdToPlayers.entries()).map(
+    ([teamId, players]) => {
+      const avatars: TeamAvatar[] = players.slice(0, 2).map((pl) => ({
+        profilePicture: pl.profilePicture ?? null,
+        initials:
+          `${pl.firstName.charAt(0)}${pl.lastName.charAt(0)}`.toUpperCase(),
+      }));
+
+      return {
+        id: teamId,
+        color: teamIdToColor.get(teamId) ?? COLORS.NODE,
+        avatars,
+      };
+    },
   );
+
+  // Build team-to-team links, deduped
+  const linkKeySet = new Set<string>();
+  const links: GraphLink[] = [];
+  playersWithTargets.forEach((p) => {
+    const sourceTeamId = p.team ? p.team.id : undefined;
+    if (!sourceTeamId) return;
+    for (const t of p.targets) {
+      const targetTeamId = userIdToTeamId.get(t.targetId);
+      if (!targetTeamId || targetTeamId === sourceTeamId) continue;
+      const key = `${sourceTeamId}->${targetTeamId}`;
+      if (linkKeySet.has(key)) continue;
+      linkKeySet.add(key);
+      links.push({ source: sourceTeamId, target: targetTeamId });
+    }
+  });
 
   return { nodes, links };
 }
 
-function drawProfilePicture(
+function drawAvatar(
   ctx: CanvasRenderingContext2D,
-  node: GraphNode,
-  img: HTMLImageElement,
+  x: number,
+  y: number,
   size: number,
-  globalScale: number,
+  teamColor: string,
+  img: HTMLImageElement | undefined,
+  initials: string,
 ) {
-  const x = node.x ?? 0;
-  const y = node.y ?? 0;
+  if (img) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+    ctx.clip();
+    ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    ctx.restore();
 
-  // Draw the profile picture as a circle
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
-  ctx.clip();
-  ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
-  ctx.restore();
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+    ctx.strokeStyle = COLORS.BORDER;
+    ctx.lineWidth = GRAPH_CONFIG.BORDER_WIDTH;
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+    ctx.fillStyle = teamColor;
+    ctx.fill();
+    ctx.strokeStyle = COLORS.BORDER;
+    ctx.lineWidth = GRAPH_CONFIG.BORDER_WIDTH;
+    ctx.stroke();
 
-  // Add border
-  ctx.beginPath();
-  ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
-  ctx.strokeStyle = COLORS.BORDER;
-  ctx.lineWidth = GRAPH_CONFIG.BORDER_WIDTH / globalScale;
-  ctx.stroke();
-}
-
-function drawInitialsCircle(
-  ctx: CanvasRenderingContext2D,
-  node: GraphNode,
-  size: number,
-  globalScale: number,
-) {
-  const x = node.x ?? 0;
-  const y = node.y ?? 0;
-
-  // Draw background circle
-  ctx.beginPath();
-  ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
-  ctx.fillStyle = node.color;
-  ctx.fill();
-  ctx.strokeStyle = COLORS.BORDER;
-  ctx.lineWidth = GRAPH_CONFIG.BORDER_WIDTH / globalScale;
-  ctx.stroke();
-
-  // Draw initials text
-  ctx.fillStyle = COLORS.TEXT;
-  ctx.font = `${(size * GRAPH_CONFIG.FONT_SIZE_RATIO) / globalScale}px Arial`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(node.initials, x, y);
+    ctx.fillStyle = COLORS.TEXT;
+    ctx.font = `${size * GRAPH_CONFIG.FONT_SIZE_RATIO}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initials, x, y);
+  }
 }
 
 export function TargetNetwork({
@@ -176,39 +273,82 @@ export function TargetNetwork({
 }: {
   playersWithTargets: PlayerWithTargets[];
 }) {
-  const fgRef = useRef<any>(null);
+  const fgRef = useRef<ForceGraphMethods<NodeObject, LinkObject> | undefined>(
+    undefined,
+  );
   const graphData = createGraphData(playersWithTargets);
   const loadedImages = useImageLoader(playersWithTargets);
 
   useForceGraphConfig(fgRef);
 
   const renderNode = useCallback(
-    (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const size = GRAPH_CONFIG.NODE_SIZE / globalScale;
-      const graphNode = node as GraphNode;
+      const teamNode = node as TeamGraphNode;
+      const x = teamNode.x ?? 0;
+      const y = teamNode.y ?? 0;
 
-      const img = graphNode.profilePicture
-        ? loadedImages.current.get(graphNode.profilePicture)
-        : null;
+      const overlap = size * 0.5; // amount of overlap between avatars
+      const [left, right] = teamNode.avatars.slice(0, 2);
 
-      if (img) {
-        drawProfilePicture(ctx, graphNode, img, size, globalScale);
+      if (left && right) {
+        const leftImg = left.profilePicture
+          ? loadedImages.current.get(left.profilePicture)
+          : undefined;
+        const rightImg = right.profilePicture
+          ? loadedImages.current.get(right.profilePicture)
+          : undefined;
+
+        // Draw left slightly to the left, then right on top for nice overlap
+        drawAvatar(
+          ctx,
+          x - overlap / 2,
+          y,
+          size,
+          teamNode.color,
+          leftImg,
+          left.initials,
+        );
+        drawAvatar(
+          ctx,
+          x + overlap / 2,
+          y,
+          size,
+          teamNode.color,
+          rightImg,
+          right.initials,
+        );
+
+        teamNode.__bckgDimensions = [size + overlap, size];
+      } else if (left) {
+        const only = left;
+        const onlyImg = only.profilePicture
+          ? loadedImages.current.get(only.profilePicture)
+          : undefined;
+        drawAvatar(ctx, x, y, size, teamNode.color, onlyImg, only.initials);
+        teamNode.__bckgDimensions = [size, size];
       } else {
-        drawInitialsCircle(ctx, graphNode, size, globalScale);
+        // Fallback: empty circle with team color
+        ctx.beginPath();
+        ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = teamNode.color;
+        ctx.fill();
+        ctx.strokeStyle = COLORS.BORDER;
+        ctx.lineWidth = GRAPH_CONFIG.BORDER_WIDTH;
+        ctx.stroke();
+        teamNode.__bckgDimensions = [size, size];
       }
-
-      // Set dimensions for pointer area
-      graphNode.__bckgDimensions = [size, size];
     },
     [loadedImages],
   );
 
   const renderPointerArea = useCallback(
-    (node: any, color: string, ctx: CanvasRenderingContext2D) => {
-      const size = (node.__bckgDimensions as number[] | undefined)?.[0] ?? 30;
+    (node: NodeObject, color: string, ctx: CanvasRenderingContext2D) => {
+      const teamNode = node as TeamGraphNode;
+      const sizeW = teamNode.__bckgDimensions?.[0] ?? 30;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(node.x ?? 0, node.y ?? 0, size / 2, 0, 2 * Math.PI);
+      ctx.arc(node.x ?? 0, node.y ?? 0, sizeW / 2, 0, 2 * Math.PI);
       ctx.fill();
     },
     [],

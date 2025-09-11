@@ -1,10 +1,11 @@
+import { ErrorCallback, IContext } from "http-mitm-proxy";
+
 import { db } from "@splashin/db/client";
 import {
   splashinTarget,
   splashinTeam,
   splashinUser,
 } from "@splashin/db/schema";
-import { ErrorCallback, IContext } from "http-mitm-proxy";
 
 import {
   createJsonModifier,
@@ -67,6 +68,7 @@ const gameDashboardModifier = createJsonModifier(async function* (
         userId: json.currentPlayer.id,
         targetId: target.id,
         round: json.round.idx.toString(),
+        source: "proxy" as const,
       })),
     )
     .onConflictDoNothing();
