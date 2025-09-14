@@ -1,6 +1,7 @@
 "use client";
 
 import type { SVGProps } from "react";
+import { redirect } from "next/navigation";
 
 import { Button } from "@splashin/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@splashin/ui/card";
@@ -8,6 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@splashin/ui/card";
 import { authClient } from "~/auth/client";
 
 export default function SignInPage() {
+  const { data: session } = authClient.useSession();
+  if (session) {
+    redirect("/");
+  }
   return (
     <div className="flex size-full items-center justify-center">
       <Card className="bg-card/50 rounded-none">

@@ -1,9 +1,9 @@
-import { db } from "@splashin/db/client";
-import {
+import type {
   splashinTarget,
   splashinTeam,
   splashinUser,
 } from "@splashin/db/schema";
+import { db } from "@splashin/db/client";
 
 import { TargetsClient } from "./targets.client";
 
@@ -20,5 +20,9 @@ export default function TargetsPage() {
     })[]
   >;
 
-  return <TargetsClient playersWithTargets={targets} />;
+  return (
+    <div className="!mt-0">
+      <TargetsClient playersWithTargets={targets} />
+    </div>
+  );
 }

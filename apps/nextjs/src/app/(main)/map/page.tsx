@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { db } from "@splashin/db/client";
-import { splashinTeam, splashinUser } from "@splashin/db/schema";
 
-import { PlayerMap } from "~/components/player-map";
+import type { splashinTeam, splashinUser } from "@splashin/db/schema";
+import { db } from "@splashin/db/client";
+
 import { MapClient } from "./map.client";
 
 export default function MapPage() {
@@ -15,8 +15,14 @@ export default function MapPage() {
   >;
 
   return (
-    <div className="size-full">
-      <Suspense fallback={<div>Loading...</div>}>
+    <div className="!mt-0 size-full">
+      <Suspense
+        fallback={
+          <div className="text-muted-foreground flex size-full items-center justify-center">
+            Loading...
+          </div>
+        }
+      >
         <MapClient users={users} />
       </Suspense>
     </div>

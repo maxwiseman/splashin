@@ -8,7 +8,7 @@ export default function MainLayout({
   return (
     <div className="size-full">
       <Navbar />
-      {children}
+      <div className="contents [&>*]:mt-[6.125rem]">{children}</div>
     </div>
   );
 }
