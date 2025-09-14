@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+
 import { cn } from "@splashin/ui";
 import { ThemeProvider, ThemeToggle } from "@splashin/ui/theme";
 import { Toaster } from "@splashin/ui/toast";
-import { Analytics } from "@vercel/analytics/next";
 
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/trpc/react";
@@ -51,14 +52,14 @@ export default function RootLayout(props: { children: React.ReactNode }) {
       </Head> */}
       <body
         className={cn(
-          "size-full bg-background font-sans text-foreground antialiased",
+          "bg-background text-foreground size-full font-sans antialiased",
           geistSans.variable,
-          geistMono.variable,
+          geistMono.className,
         )}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TRPCReactProvider>{props.children}</TRPCReactProvider>
-          <div className="absolute bottom-4 right-4">
+          <div className="absolute right-4 bottom-4">
             <ThemeToggle />
           </div>
           <Toaster />

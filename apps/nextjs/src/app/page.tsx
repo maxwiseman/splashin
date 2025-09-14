@@ -1,11 +1,9 @@
-import { PlayerMap } from "~/components/player-map";
-import { TargetNetwork } from "~/components/target-network";
+import { Navbar } from "./navbar";
 
 export default function HomePage() {
   return (
     <div className="size-full">
-      {/* <TargetNetwork /> */}
-      {/* <PlayerMap /> */}
+      <Navbar />
     </div>
   );
 }

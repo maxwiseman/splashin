@@ -30,6 +30,7 @@
     "react-dom": "catalog:react19",
     "react-force-graph-2d": "^1.29.0",
     "superjson": "2.2.2",
+    "tw-animate-css": "^1.3.8",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@splashin/prettier-config": "workspace:*",
     "@splashin/tailwind-config": "workspace:*",
     "@splashin/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.18.1",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",
