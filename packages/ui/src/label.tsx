@@ -1,6 +1,7 @@
 import * as React from "react";
-import { cn } from "@splashin/ui";
 import { Label as LabelPrimitive } from "radix-ui";
+
+import { cn } from "@splashin/ui";
 
 export function Label({
   className,
@@ -9,7 +10,7 @@ export function Label({
   return (
     <LabelPrimitive.Root
       className={cn(
-        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        "text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
         className,
       )}
       {...props}

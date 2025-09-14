@@ -9,13 +9,14 @@ import type {
 import type { ZodType } from "zod/v4";
 import * as React from "react";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { cn } from "@splashin/ui";
 import { Slot } from "radix-ui";
 import {
   useForm as __useForm,
   Controller,
   useFormContext,
 } from "react-hook-form";
+
+import { cn } from "@splashin/ui";
 
 import { Label } from "./label";
 
@@ -140,7 +141,7 @@ export function FormDescription({
   return (
     <p
       id={formDescriptionId}
-      className={cn("text-[0.8rem] text-muted-foreground", className)}
+      className={cn("text-muted-foreground text-[0.8rem]", className)}
       {...props}
     />
   );
@@ -161,7 +162,7 @@ export function FormMessage({
   return (
     <p
       id={formMessageId}
-      className={cn("text-[0.8rem] font-medium text-destructive", className)}
+      className={cn("text-destructive text-[0.8rem] font-medium", className)}
       {...props}
     >
       {body}

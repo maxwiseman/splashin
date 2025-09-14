@@ -14,21 +14,17 @@ const tabs: {
   matcher?: RegExp;
 }[] = [
   {
-    label: "Tab_1",
+    label: "Map",
+    href: "/map",
+  },
+  {
+    label: "Location",
     href: "/",
     allowSubPaths: false,
   },
   {
-    label: "Tab_2",
-    href: "/test",
-  },
-  {
-    label: "Tab_3",
-    href: "/test",
-  },
-  {
-    label: "Tab_4",
-    href: "/test",
+    label: "Targets",
+    href: "/targets",
   },
 ];
 
@@ -39,6 +35,7 @@ export function Navbar() {
       <div className="sticky top-0 flex w-full max-w-4xl flex-col justify-between border-x border-b backdrop-blur-xs">
         <div className="flex w-full items-center justify-between px-4 py-4">
           <Link
+            prefetch
             href="/"
             className="flex h-full w-32 items-center justify-center"
           >

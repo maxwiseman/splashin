@@ -1,17 +1,18 @@
 import type { BetterAuthOptions } from "better-auth";
 import { expo } from "@better-auth/expo";
-import { db } from "@splashin/db/client";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { oAuthProxy } from "better-auth/plugins";
+
+import { db } from "@splashin/db/client";
 
 export function initAuth(options: {
   baseUrl: string;
   productionUrl: string;
   secret: string | undefined;
 
-  discordClientId: string;
-  discordClientSecret: string;
+  googleClientId: string;
+  googleClientSecret: string;
 }) {
   const config = {
     database: drizzleAdapter(db, {
@@ -30,10 +31,10 @@ export function initAuth(options: {
       expo(),
     ],
     socialProviders: {
-      discord: {
-        clientId: options.discordClientId,
-        clientSecret: options.discordClientSecret,
-        redirectURI: `${options.productionUrl}/api/auth/callback/discord`,
+      google: {
+        clientId: options.googleClientId,
+        clientSecret: options.googleClientSecret,
+        redirectURI: `${options.productionUrl}/api/auth/callback/google`,
       },
     },
     trustedOrigins: ["expo://"],

@@ -11,8 +11,6 @@ import { TRPCReactProvider } from "~/trpc/react";
 
 import "~/app/globals.css";
 
-import Head from "next/head";
-
 export const metadata: Metadata = {
   metadataBase: new URL(
     env.VERCEL_ENV === "production"
