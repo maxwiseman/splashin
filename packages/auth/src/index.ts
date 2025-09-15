@@ -41,6 +41,12 @@ export function initAuth(options: {
             return crypto.randomUUID();
           },
         },
+        permissions: {
+          type: "string[]",
+          required: true,
+          input: false,
+          defaultValue: ["view-map", "pause-location"],
+        },
       },
     },
     socialProviders: {

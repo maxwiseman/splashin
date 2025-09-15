@@ -20,21 +20,6 @@ export const playersMatcher =
 const playersModifier = createJsonModifier(async function* (
   json: PlayerRequest,
 ) {
-  console.log("Game dashboard JSON keys:", Object.keys(json));
-
-  // Modify the data
-  // json.currentPlayer.subscription_level = 10;
-  //   json.game.join_code = "Volantir";
-  // json.premiumCount = 69;
-  // json.round = {
-  //   ...json.round,
-  //   idx: 69,
-  //   name: "Round 69",
-  // };
-  //   console.log(
-  //     `[TARGETS OF ${json.currentPlayer.first_name} ${json.currentPlayer.last_name}]: ${json.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
-  //   );
-
   yield json;
 
   console.log("Updating player database");

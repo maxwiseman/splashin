@@ -176,15 +176,15 @@ proxy.onRequest(async (ctx, callback) => {
         return callback();
       }
       return; // Don't call callback() - we're handling this completely
-    } else if (getLocationByIdMatcher.test(url ?? "")) {
-      console.log("Detected location request");
-      try {
-        await getLocationByIdHandler(ctx, callback);
-      } catch (err) {
-        console.error("[HANDLER][LOCATION_BY_ID] error", err);
-        return callback();
-      }
-      return; // Don't call callback() - we're handling this completely
+      // } else if (getLocationByIdMatcher.test(url ?? "")) {
+      //   console.log("Detected location request");
+      //   try {
+      //     await getLocationByIdHandler(ctx, callback);
+      //   } catch (err) {
+      //     console.error("[HANDLER][LOCATION_BY_ID] error", err);
+      //     return callback();
+      //   }
+      //   return; // Don't call callback() - we're handling this completely
     } else if (playersMatcher.test(url ?? "")) {
       console.log("Detected players request");
       try {

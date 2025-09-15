@@ -4,7 +4,7 @@ import * as p from "drizzle-orm/pg-core";
 
 import { user } from "./auth-schema";
 
-export const lastActivityType = pgEnum("lastActivityType", [
+export const activityType = pgEnum("splashin_activity_type", [
   "in_vehicle",
   "walking",
   "still",
@@ -22,7 +22,7 @@ export const splashinUser = pgTable("splashin_user", () => ({
     mode: "xy",
     srid: 4326,
   }),
-  lastActivityType: lastActivityType(),
+  lastActivityType: activityType(),
   authToken: p.text(),
   apiKey: p.text(),
   locationUpdatedAt: p.timestamp(),
@@ -59,9 +59,11 @@ export const splashinElimination = pgTable(
     round: p.numeric().notNull(),
     userId: p
       .text()
+      .notNull()
       .references(() => splashinUser.id, { onDelete: "set null" }),
     eliminatedBy: p
       .text()
+      .notNull()
       .references(() => splashinUser.id, { onDelete: "set null" }),
     eliminatedAt: p.timestamp().notNull(),
   }),
@@ -85,7 +87,7 @@ export const splashinEliminationRelations = relations(
   }),
 );
 
-const splashinTargetSource = pgEnum("splashin_target_source", [
+export const splashinTargetSource = pgEnum("splashin_target_source", [
   "game",
   "proxy",
   "word_of_mouth",

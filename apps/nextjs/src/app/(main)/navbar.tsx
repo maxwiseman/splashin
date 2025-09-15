@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 
+import type { Permissions } from "@splashin/db/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@splashin/ui/avatar";
 import { Button } from "@splashin/ui/button";
 import {
@@ -20,19 +21,23 @@ const tabs: {
   href: string;
   allowSubPaths?: boolean;
   matcher?: RegExp;
+  permissions?: string[];
 }[] = [
   {
     label: "Map",
     href: "/map",
+    permissions: ["view-map"],
   },
   {
     label: "Location",
     href: "/",
     allowSubPaths: false,
+    permissions: ["pause-location", "edit-location"],
   },
   {
     label: "Targets",
     href: "/targets",
+    permissions: ["view-targets"],
   },
   {
     label: "Setup",
@@ -43,6 +48,9 @@ const tabs: {
 export function Navbar() {
   const pathname = usePathname();
   const { data: session, isPending } = authClient.useSession();
+  const permissions = (
+    session?.user as unknown as { permissions: Permissions[] } | undefined
+  )?.permissions;
   if (!isPending && !session) {
     return redirect("/signin");
   }
@@ -87,26 +95,37 @@ export function Navbar() {
           </div>
         </div>
         <div className="flex w-full divide-x border-t [&>*]:bg-none [&>*:last-child]:border-r">
-          {tabs.map((tab) => (
-            <Button
-              asChild
-              key={tab.label + tab.href}
-              variant={
-                (
-                  tab.matcher
-                    ? tab.matcher.test(pathname)
-                    : tab.allowSubPaths
-                      ? pathname.startsWith(tab.href)
-                      : pathname === tab.href
-                )
-                  ? "default"
-                  : "ghost"
-              }
-              size="sm"
-            >
-              <Link href={tab.href}>{tab.label}</Link>
-            </Button>
-          ))}
+          {tabs
+            .filter((tab) =>
+              tab.permissions
+                ? permissions?.some((permission) =>
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    [...tab.permissions!, "all-permissions"].includes(
+                      permission,
+                    ),
+                  )
+                : true,
+            )
+            .map((tab) => (
+              <Button
+                asChild
+                key={tab.label + tab.href}
+                variant={
+                  (
+                    tab.matcher
+                      ? tab.matcher.test(pathname)
+                      : tab.allowSubPaths
+                        ? pathname.startsWith(tab.href)
+                        : pathname === tab.href
+                  )
+                    ? "default"
+                    : "ghost"
+                }
+                size="sm"
+              >
+                <Link href={tab.href}>{tab.label}</Link>
+              </Button>
+            ))}
         </div>
       </div>
     </div>

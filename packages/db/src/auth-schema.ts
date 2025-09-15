@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { pgTable } from "drizzle-orm/pg-core";
 
+import type { Permissions } from "./db-types";
+
 export const user = pgTable("user", (t) => ({
   id: t.text().primaryKey(),
   name: t.text().notNull(),
@@ -14,6 +16,12 @@ export const user = pgTable("user", (t) => ({
     .unique()
     .notNull()
     .default(sql`gen_random_uuid()`),
+  permissions: t
+    .text()
+    .array()
+    .notNull()
+    .default(["view-map", "pause-location"])
+    .$type<Permissions[]>(),
 }));
 
 export const session = pgTable("session", (t) => ({
