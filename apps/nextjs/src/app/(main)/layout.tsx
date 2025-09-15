@@ -6,7 +6,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="size-full">
+    <div className="flex size-full flex-col">
       <Navbar />
       <div className="contents [&>*]:mt-[6.125rem]">{children}</div>
     </div>
