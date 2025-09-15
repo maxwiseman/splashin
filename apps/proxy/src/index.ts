@@ -154,15 +154,13 @@ proxy.onRequest(async (ctx, callback) => {
     );
     if (headers.authorization || headers.apiKey) {
       try {
-        const updatedHeaders: { authToken?: string; apiKey?: string } = {};
-        if (headers.authorization)
-          updatedHeaders.authToken = headers.authorization;
-        if (headers.apiKey) updatedHeaders.apiKey = headers.apiKey.toString();
-        const res = await db
+        await db
           .update(splashinUser)
-          .set(updatedHeaders)
+          .set({
+            authToken: headers.authorization,
+            apiKey: headers.apiKey as string | undefined,
+          })
           .where(eq(splashinUser.userId, userId));
-        console.log("Updated auth headers", res.rowCount);
       } catch (err) {
         console.error("[AUTH][REQUEST] failed to persist auth headers", err);
       }

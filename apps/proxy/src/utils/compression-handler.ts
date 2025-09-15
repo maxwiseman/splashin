@@ -3,11 +3,13 @@ import * as https from "https";
 import * as zlib from "zlib";
 import { ErrorCallback, IContext } from "http-mitm-proxy";
 
-export type DataModifier = (
+export type DataModifier<C = any> = (
   decompressedData: string,
+  context?: C,
 ) => string | Promise<string>;
-export type JsonModifier = (
+export type JsonModifier<C = any> = (
   json: any,
+  context?: C,
 ) => any | Generator<any, void, unknown> | AsyncGenerator<any, void, unknown>;
 export type AsyncJsonModifier = (
   json: any,
@@ -20,6 +22,8 @@ export interface ProxyHandlerOptions {
   logData?: boolean;
   /** Custom log prefix for debugging */
   logPrefix?: string;
+  /** Build a context object for this request to be passed to the data modifier */
+  getContext?: (ctx: IContext) => any;
 }
 
 /**
@@ -32,6 +36,7 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
     dataModifier = (data) => data, // Default: pass through unchanged
     logData = false,
     logPrefix = "PROXY_HANDLER",
+    getContext,
   } = options;
 
   return function proxyHandler(ctx: IContext, callback: ErrorCallback) {
@@ -130,8 +135,11 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
             );
           }
 
+          // Build context for this request if provided
+          const requestContext = getContext ? getContext(ctx) : undefined;
+
           // Apply user's data modification (might be async)
-          const modifierResult = dataModifier(decompressedData);
+          const modifierResult = dataModifier(decompressedData, requestContext);
 
           // Handle both sync and async results
           Promise.resolve(modifierResult)
@@ -194,10 +202,10 @@ export function createProxyHandler(options: ProxyHandlerOptions = {}) {
  * Supports both regular functions and generator functions
  */
 export function createJsonModifier(modifier: JsonModifier): DataModifier {
-  return async (data: string) => {
+  return async (data: string, context?: any) => {
     try {
       const json = JSON.parse(data);
-      const result = modifier(json);
+      const result = modifier(json, context);
 
       // Check if result is a generator (sync or async)
       if (
