@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pgTable } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", (t) => ({
@@ -8,6 +9,11 @@ export const user = pgTable("user", (t) => ({
   image: t.text(),
   createdAt: t.timestamp().notNull(),
   updatedAt: t.timestamp().notNull(),
+  secret: t
+    .text()
+    .unique()
+    .notNull()
+    .default(sql`gen_random_uuid()`),
 }));
 
 export const session = pgTable("session", (t) => ({

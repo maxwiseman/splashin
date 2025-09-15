@@ -30,6 +30,19 @@ export function initAuth(options: {
       }),
       expo(),
     ],
+    user: {
+      additionalFields: {
+        secret: {
+          type: "string",
+          required: true,
+          unique: true,
+          input: false,
+          defaultValue() {
+            return crypto.randomUUID();
+          },
+        },
+      },
+    },
     socialProviders: {
       google: {
         clientId: options.googleClientId,

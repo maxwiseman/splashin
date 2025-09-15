@@ -1,5 +1,9 @@
 import { Proxy } from "http-mitm-proxy";
 
+import { eq } from "@splashin/db";
+import { db } from "@splashin/db/client";
+import { splashinUser, user as userTable } from "@splashin/db/schema";
+
 import {
   gameDashboardHandler,
   gameDashboardMatcher,
@@ -15,11 +19,15 @@ const port = 9090;
 
 const proxy = new Proxy();
 
-function identifyUser(username: string, password: string): string | Error {
-  // Fake implementation: accept all, return the username as the identity
-  if (password !== process.env.AUTH_SECRET)
-    return new Error("Invalid password");
-  console.log(`[IDENTIFY] username="${username}" password="${password}"`);
+async function identifyUser(
+  username: string,
+  password: string,
+): Promise<string | Error> {
+  const user = await db.query.user.findFirst({
+    where: eq(userTable.id, username),
+  });
+  if (password !== user?.secret) return new Error("Invalid password");
+  console.log(`[IDENTIFY] user="${user.name}"`);
   return username;
 }
 
@@ -52,7 +60,7 @@ proxy.onError((ctx, err, errorKind) => {
   console.error(`${errorKind} on ${url}:`, err);
 });
 
-proxy.onConnect((req, socket, _: Buffer, callback) => {
+proxy.onConnect(async (req, socket, _: Buffer, callback) => {
   const creds = getBasicProxyAuthCredentials(req as any);
   if (!creds) {
     console.error("[AUTH][CONNECT] no credentials");
@@ -67,7 +75,7 @@ proxy.onConnect((req, socket, _: Buffer, callback) => {
     socket.end();
     return;
   }
-  const identity = identifyUser(creds.userId, creds.secret);
+  const identity = await identifyUser(creds.userId, creds.secret);
   if (identity instanceof Error) {
     console.error("[AUTH][CONNECT] invalid credentials");
     const res =
@@ -116,6 +124,14 @@ proxy.onRequest(async (ctx, callback) => {
       host
     }${ctx.clientToProxyRequest.url?.slice(0, 50)}`,
   );
+  if (headers.authorization || headers.apiKey)
+    await db
+      .update(splashinUser)
+      .set({
+        authToken: headers.authorization,
+        apiKey: headers.apiKey as string | undefined,
+      })
+      .where(eq(splashinUser.userId, userId));
 
   // if (headers.authorization) {
   //   await db
