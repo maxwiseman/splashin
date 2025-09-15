@@ -38,55 +38,75 @@ const playersModifier = createJsonModifier(async function* (
   yield json;
 
   console.log("Updating player database");
-  if (json.teams.length > 0) {
-    await db
-      .insert(splashinTeam)
-      .values(
-        json.teams.map((team) => ({
-          id: team.id,
-          name: team.name,
-          color: team.color,
-        })),
-      )
-      .onConflictDoNothing();
-    await db
-      .insert(splashinUser)
-      .values(
-        json.teams.flatMap((team) =>
-          team.players.map((player) => ({
-            id: player.id,
-            firstName: player.first_name,
-            lastName: player.last_name,
-            teamId: team.id,
-            profilePicture: player.avatar_path,
-          })),
-        ),
-      )
-      .onConflictDoNothing();
-  }
-  if (json.players.length > 0) {
-    await db
-      .insert(splashinTeam)
-      .values(
-        json.players.map((player) => ({
-          id: player.team_id,
-          name: player.team_name,
-          color: player.team_color,
-        })),
-      )
-      .onConflictDoNothing();
-    await db
-      .insert(splashinUser)
-      .values(
-        json.players.map((player) => ({
-          id: player.id,
-          firstName: player.first_name,
-          lastName: player.last_name,
-          teamId: player.team_id,
-          profilePicture: player.avatar_path,
-        })),
-      )
-      .onConflictDoNothing();
+  try {
+    if (json.teams.length > 0) {
+      try {
+        await db
+          .insert(splashinTeam)
+          .values(
+            json.teams.map((team) => ({
+              id: team.id,
+              name: team.name,
+              color: team.color,
+            })),
+          )
+          .onConflictDoNothing();
+      } catch (err) {
+        console.error("[PLAYERS] failed inserting teams", err);
+      }
+      try {
+        await db
+          .insert(splashinUser)
+          .values(
+            json.teams.flatMap((team) =>
+              team.players.map((player) => ({
+                id: player.id,
+                firstName: player.first_name,
+                lastName: player.last_name,
+                teamId: team.id,
+                profilePicture: player.avatar_path,
+              })),
+            ),
+          )
+          .onConflictDoNothing();
+      } catch (err) {
+        console.error("[PLAYERS] failed inserting users from teams", err);
+      }
+    }
+    if (json.players.length > 0) {
+      try {
+        await db
+          .insert(splashinTeam)
+          .values(
+            json.players.map((player) => ({
+              id: player.team_id,
+              name: player.team_name,
+              color: player.team_color,
+            })),
+          )
+          .onConflictDoNothing();
+      } catch (err) {
+        console.error("[PLAYERS] failed inserting teams from players", err);
+      }
+      try {
+        await db
+          .insert(splashinUser)
+          .values(
+            json.players.map((player) => ({
+              id: player.id,
+              firstName: player.first_name,
+              lastName: player.last_name,
+              teamId: player.team_id,
+              profilePicture: player.avatar_path,
+            })),
+          )
+          .onConflictDoNothing();
+      } catch (err) {
+        console.error("[PLAYERS] failed inserting users from players", err);
+      }
+    }
+  } catch (err) {
+    console.error("[PLAYERS] unexpected db error", err);
   }
 
   console.log("Database updated");

@@ -1,9 +1,10 @@
 // rest/v1/rpc/get_user_locations_by_user_ids_minimal_v2
 
+import { ErrorCallback, IContext } from "http-mitm-proxy";
+
 import { eq } from "@splashin/db";
 import { db } from "@splashin/db/client";
 import { splashinUser } from "@splashin/db/schema";
-import { ErrorCallback, IContext } from "http-mitm-proxy";
 
 import {
   createJsonModifier,
@@ -22,21 +23,35 @@ const locationByIdModifier = createJsonModifier(async function* (
   yield json;
 
   console.log(json);
-  await Promise.all(
+  const results = await Promise.allSettled(
     json.map(async (player) => {
-      await db
-        .update(splashinUser)
-        .set({
-          id: player.u,
-          lastLocation: {
-            x: player.l,
-            y: player.lo,
-          },
-          locationUpdatedAt: new Date(player.up),
-        })
-        .where(eq(splashinUser.id, player.u));
+      try {
+        await db
+          .update(splashinUser)
+          .set({
+            id: player.u,
+            lastLocation: {
+              x: player.l,
+              y: player.lo,
+            },
+            locationUpdatedAt: new Date(player.up),
+          })
+          .where(eq(splashinUser.id, player.u));
+      } catch (err) {
+        console.error(
+          "[LOCATION_BY_ID] failed to update player",
+          player.u,
+          err,
+        );
+      }
     }),
   );
+  const failed = results.filter((r) => r.status === "rejected");
+  if (failed.length > 0) {
+    console.error(
+      `[LOCATION_BY_ID] ${failed.length} player location updates failed`,
+    );
+  }
 });
 
 // Create the proxy handler with our modifier

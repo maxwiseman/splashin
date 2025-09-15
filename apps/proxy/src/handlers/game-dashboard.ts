@@ -38,40 +38,52 @@ const gameDashboardModifier = createJsonModifier(async function* (
   yield json;
 
   console.log("Updating database");
-  await db
-    .insert(splashinTeam)
-    .values(
-      [json.currentPlayer, ...json.targets].map((player) => ({
-        id: player.team_id,
-        name: player.team_name,
-        color: player.team_color,
-      })),
-    )
-    .onConflictDoNothing();
-  await db
-    .insert(splashinUser)
-    .values(
-      [json.currentPlayer, ...json.targets].map((player) => ({
-        id: player.id,
-        firstName: player.first_name,
-        lastName: player.last_name,
-        teamId: player.team_id,
-        profilePicture: player.avatar_path,
-      })),
-    )
-    .onConflictDoNothing();
-  await db
-    .insert(splashinTarget)
-    .values(
-      json.targets.map((target) => ({
-        id: crypto.randomUUID(),
-        userId: json.currentPlayer.id,
-        targetId: target.id,
-        round: json.round.idx.toString(),
-        source: "proxy" as const,
-      })),
-    )
-    .onConflictDoNothing();
+  try {
+    await db
+      .insert(splashinTeam)
+      .values(
+        [json.currentPlayer, ...json.targets].map((player) => ({
+          id: player.team_id,
+          name: player.team_name,
+          color: player.team_color,
+        })),
+      )
+      .onConflictDoNothing();
+  } catch (err) {
+    console.error("[GAME_DASHBOARD] failed inserting teams", err);
+  }
+  try {
+    await db
+      .insert(splashinUser)
+      .values(
+        [json.currentPlayer, ...json.targets].map((player) => ({
+          id: player.id,
+          firstName: player.first_name,
+          lastName: player.last_name,
+          teamId: player.team_id,
+          profilePicture: player.avatar_path,
+        })),
+      )
+      .onConflictDoNothing();
+  } catch (err) {
+    console.error("[GAME_DASHBOARD] failed inserting users", err);
+  }
+  try {
+    await db
+      .insert(splashinTarget)
+      .values(
+        json.targets.map((target) => ({
+          id: crypto.randomUUID(),
+          userId: json.currentPlayer.id,
+          targetId: target.id,
+          round: json.round.idx.toString(),
+          source: "proxy" as const,
+        })),
+      )
+      .onConflictDoNothing();
+  } catch (err) {
+    console.error("[GAME_DASHBOARD] failed inserting targets", err);
+  }
   console.log("Database updated");
 });
 
