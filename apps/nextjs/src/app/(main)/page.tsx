@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconPower } from "@tabler/icons-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { Button } from "@splashin/ui/button";
 import { DateTimePicker } from "@splashin/ui/date-picker";
@@ -16,13 +17,49 @@ import {
 } from "@splashin/ui/dialog";
 import { Label } from "@splashin/ui/label";
 
+import { useDebouncedValue } from "~/components/hooks/use-debounce";
+import { usePermissions } from "~/components/hooks/use-permissions";
+import { queryClient } from "../providers";
+import {
+  getLocationEditData,
+  updateLocationEditData,
+} from "./location-actions";
+
 export default function HomePage() {
-  const canEditLocation = false;
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [editUntil, setEditUntil] = useState<Date | undefined>(
+  const canEditLocation = usePermissions(["edit-location"]);
+  // const [locationEnabled, setLocationEnabled] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(new Date().getTime() + 60 * 60 * 1000),
   );
+  const debouncedDate = useDebouncedValue(selectedDate, 300);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { data } = useQuery({
+    queryKey: ["locationEditData"],
+    queryFn: getLocationEditData,
+  });
+  const { mutate: updateData, variables } = useMutation({
+    mutationFn: updateLocationEditData,
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["locationEditData"] }),
+  });
+
+  const optimisticData = {
+    ...data,
+    ...variables,
+  };
+  const locationEnabled = optimisticData.editUntil
+    ? optimisticData.editUntil.getTime() < new Date().getTime()
+    : true;
+
+  useEffect(() => {
+    if (!locationEnabled)
+      updateData({
+        editUntil: debouncedDate,
+      });
+  }, [debouncedDate]);
+
+  console.log("optimisticData", optimisticData);
 
   return (
     <div className="flex size-full items-center justify-center py-8">
@@ -34,7 +71,9 @@ export default function HomePage() {
               : `Location ${canEditLocation ? "Hidden" : "Paused"}`}
           </div>
           <div className="text-muted-foreground">
-            {locationEnabled ? "" : `Until ${editUntil?.toLocaleString()}`}
+            {locationEnabled
+              ? ""
+              : `Until ${optimisticData.editUntil?.toLocaleString()}`}
           </div>
         </div>
         <div className="flex flex-col">
@@ -42,7 +81,21 @@ export default function HomePage() {
             variant={locationEnabled ? "default" : "outline"}
             size="icon"
             className="size-24 border-b-0"
-            onClick={() => setLocationEnabled(!locationEnabled)}
+            onClick={() => {
+              if (!locationEnabled) updateData({ editUntil: null });
+              else {
+                const oneHourFromNow = new Date(
+                  new Date().getTime() + 60 * 60 * 1000,
+                );
+                const isPastDate =
+                  !selectedDate ||
+                  selectedDate.getTime() < new Date().getTime();
+                // if (isPastDate) setSelectedDate(oneHourFromNow);
+                updateData({
+                  editUntil: isPastDate ? oneHourFromNow : selectedDate,
+                });
+              }
+            }}
           >
             <IconPower className="size-12" />
           </Button>
@@ -68,8 +121,14 @@ export default function HomePage() {
                   <Label>{canEditLocation ? "Edit" : "Pause"} until</Label>
                   <DateTimePicker
                     showLabels={false}
-                    date={editUntil}
-                    onDateChange={setEditUntil}
+                    date={
+                      selectedDate ??
+                      new Date(new Date().getTime() + 60 * 60 * 1000)
+                    }
+                    onDateChange={(newDate) => {
+                      setSelectedDate(newDate);
+                      // if (!locationEnabled) updateData({ editUntil: newDate });
+                    }}
                   />
                 </div>
               </div>

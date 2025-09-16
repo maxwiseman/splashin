@@ -22,7 +22,7 @@ export function ProxyQRCode({
 } & HTMLProps<HTMLImageElement>) {
   const { data: session } = authClient.useSession();
   console.log("user", session?.user);
-  const data = `http://${Buffer.from(`${username ?? session?.user.id}:${password ?? session?.user.secret}@${host}:${port}`, "utf-8").toString("base64")}?method=auto#Volantir`;
+  const data = `http://${Buffer.from(`${username ?? session?.user.id}:${password ?? (session?.user as unknown as { secret: string }).secret}@${host}:${port}`, "utf-8").toString("base64")}?method=auto#Volantir`;
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {

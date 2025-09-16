@@ -14,6 +14,7 @@ import {
 } from "@splashin/ui/dropdown-menu";
 
 import { authClient } from "~/auth/client";
+import { usePermissions } from "~/components/hooks/use-permissions";
 import { VolantirLogo } from "~/components/logo";
 
 const tabs: {
@@ -21,40 +22,38 @@ const tabs: {
   href: string;
   allowSubPaths?: boolean;
   matcher?: RegExp;
-  permissions?: string[];
+  permissions?: Permissions[];
 }[] = [
-  {
-    label: "Map",
-    href: "/map",
-    permissions: ["view-map"],
-  },
-  {
-    label: "Location",
-    href: "/",
-    allowSubPaths: false,
-    permissions: ["pause-location", "edit-location"],
-  },
-  {
-    label: "Targets",
-    href: "/targets",
-    permissions: ["view-targets"],
-  },
-  {
-    label: "Setup",
-    href: "/setup",
-  },
-];
+    {
+      label: "Map",
+      href: "/map",
+      permissions: ["view-map"],
+    },
+    {
+      label: "Location",
+      href: "/",
+      allowSubPaths: false,
+      permissions: ["pause-location", "edit-location"],
+    },
+    {
+      label: "Targets",
+      href: "/targets",
+      permissions: ["view-targets"],
+    },
+    {
+      label: "Setup",
+      href: "/setup",
+    },
+  ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { data: session, isPending } = authClient.useSession();
-  const permissions = (
-    session?.user as unknown as { permissions: Permissions[] } | undefined
-  )?.permissions;
+  const checkPermissions = usePermissions();
+
   if (!isPending && !session) {
     return redirect("/signin");
   }
-  console.log(session);
 
   return (
     <div className="flex w-full justify-center">
@@ -97,14 +96,15 @@ export function Navbar() {
         <div className="flex w-full divide-x border-t [&>*]:bg-none [&>*:last-child]:border-r">
           {tabs
             .filter((tab) =>
-              tab.permissions
-                ? permissions?.some((permission) =>
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    [...tab.permissions!, "all-permissions"].includes(
-                      permission,
-                    ),
-                  )
-                : true,
+              // tab.permissions
+              //   ? permissions?.some((permission) =>
+              //     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              //     [...tab.permissions!, "all-permissions"].includes(
+              //       permission,
+              //     ),
+              //   )
+              //   : true,
+              tab.permissions ? checkPermissions(tab.permissions) : true,
             )
             .map((tab) => (
               <Button
