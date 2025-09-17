@@ -24,27 +24,32 @@ const tabs: {
   matcher?: RegExp;
   permissions?: Permissions[];
 }[] = [
-    {
-      label: "Map",
-      href: "/map",
-      permissions: ["view-map"],
-    },
-    {
-      label: "Location",
-      href: "/",
-      allowSubPaths: false,
-      permissions: ["pause-location", "edit-location"],
-    },
-    {
-      label: "Targets",
-      href: "/targets",
-      permissions: ["view-targets"],
-    },
-    {
-      label: "Setup",
-      href: "/setup",
-    },
-  ];
+  {
+    label: "Map",
+    href: "/map",
+    permissions: ["view-map"],
+  },
+  {
+    label: "Location",
+    href: "/",
+    allowSubPaths: false,
+    permissions: ["pause-location", "edit-location"],
+  },
+  {
+    label: "Targets",
+    href: "/targets",
+    permissions: ["view-targets"],
+  },
+  {
+    label: "Fake Targets",
+    href: "/fake-targets",
+    permissions: ["fake-targets"],
+  },
+  {
+    label: "Setup",
+    href: "/setup",
+  },
+];
 
 export function Navbar() {
   const pathname = usePathname();

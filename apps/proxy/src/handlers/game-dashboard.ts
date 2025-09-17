@@ -1,3 +1,4 @@
+import { writeFileSync } from "fs";
 import { ErrorCallback, IContext } from "http-mitm-proxy";
 
 import { eq } from "@splashin/db";
@@ -24,15 +25,39 @@ const gameDashboardModifier = createJsonModifier(async function* (
 ) {
   console.log("Game dashboard JSON keys:", Object.keys(json));
 
+  const splashinUserData = await db.query.splashinUser.findFirst({
+    where: eq(splashinUser.userId, context?.userId ?? ""),
+  });
+  const fakeTargets = splashinUserData?.fakeTargetTeamId
+    ? await db.query.splashinUser.findMany({
+        where: eq(
+          splashinUser.teamId,
+          splashinUserData?.fakeTargetTeamId ?? "",
+        ),
+        with: {
+          team: true,
+        },
+      })
+    : [];
+
   // Modify the data
   // json.currentPlayer.subscription_level = 10;
   json.game.join_code = "Volantir";
-  // json.premiumCount = 69;
-  // json.round = {
-  //   ...json.round,
-  //   idx: 69,
-  //   name: "Round 69",
-  // };
+  if (fakeTargets.length > 0) {
+    json.targets = json.targets.map((target, i) => {
+      const fakeTarget = fakeTargets[i]!;
+      return {
+        ...target,
+        ...fakeTarget,
+        first_name: fakeTarget.firstName,
+        last_name: fakeTarget.lastName,
+        avatar_path: fakeTarget.profilePicture,
+        team_id: fakeTarget.teamId!,
+        team_name: fakeTarget.team!.name,
+        team_color: fakeTarget.team!.color,
+      };
+    });
+  }
   console.log(
     `[TARGETS OF ${json.currentPlayer.first_name} ${json.currentPlayer.last_name}]: ${json.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
   );

@@ -27,6 +27,9 @@ export const splashinUser = pgTable("splashin_user", () => ({
   apiKey: p.text(),
   locationUpdatedAt: p.timestamp(),
   locationPausedUntil: p.timestamp(),
+  fakeTargetTeamId: p
+    .text()
+    .references(() => splashinTeam.id, { onDelete: "set null" }),
 }));
 export const splashinUserRelations = relations(
   splashinUser,
@@ -40,6 +43,10 @@ export const splashinUserRelations = relations(
     }),
     eliminations: many(splashinElimination, {
       relationName: "userEliminations",
+    }),
+    fakeTargetTeam: one(splashinTeam, {
+      fields: [splashinUser.fakeTargetTeamId],
+      references: [splashinTeam.id],
     }),
   }),
 );

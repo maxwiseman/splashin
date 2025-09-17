@@ -3,4 +3,5 @@ export type Permissions =
   | "view-map"
   | "pause-location"
   | "edit-location"
-  | "view-targets";
+  | "view-targets"
+  | "fake-targets";
