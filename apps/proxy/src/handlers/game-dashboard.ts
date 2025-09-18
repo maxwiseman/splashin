@@ -1,4 +1,3 @@
-import { writeFileSync } from "fs";
 import { ErrorCallback, IContext } from "http-mitm-proxy";
 
 import { eq } from "@splashin/db";
@@ -40,8 +39,8 @@ const gameDashboardModifier = createJsonModifier(async function* (
       })
     : [];
 
-  // Modify the data
-  // json.currentPlayer.subscription_level = 10;
+  const originalJson = { ...json };
+
   json.game.join_code = "Volantir";
   if (fakeTargets.length > 0) {
     json.targets = json.targets.map((target, i) => {
@@ -59,7 +58,7 @@ const gameDashboardModifier = createJsonModifier(async function* (
     });
   }
   console.log(
-    `[TARGETS OF ${json.currentPlayer.first_name} ${json.currentPlayer.last_name}]: ${json.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
+    `[TARGETS OF ${originalJson.currentPlayer.first_name} ${originalJson.currentPlayer.last_name}]: ${originalJson.targets.map((target) => `${target.first_name} ${target.last_name}`).join(" ")}`,
   );
 
   yield json;
@@ -71,7 +70,7 @@ const gameDashboardModifier = createJsonModifier(async function* (
       .set({
         userId: context?.userId,
       })
-      .where(eq(splashinUser.id, json.currentPlayer.id));
+      .where(eq(splashinUser.id, originalJson.currentPlayer.id));
   } catch (err) {
     console.error("[GAME_DASHBOARD] failed updating userid", err);
   }
@@ -79,7 +78,7 @@ const gameDashboardModifier = createJsonModifier(async function* (
     await db
       .insert(splashinTeam)
       .values(
-        [json.currentPlayer, ...json.targets].map((player) => ({
+        [originalJson.currentPlayer, ...originalJson.targets].map((player) => ({
           id: player.team_id,
           name: player.team_name,
           color: player.team_color,
@@ -93,7 +92,7 @@ const gameDashboardModifier = createJsonModifier(async function* (
     await db
       .insert(splashinUser)
       .values(
-        [json.currentPlayer, ...json.targets].map((player) => ({
+        [originalJson.currentPlayer, ...originalJson.targets].map((player) => ({
           id: player.id,
           firstName: player.first_name,
           lastName: player.last_name,
@@ -109,11 +108,11 @@ const gameDashboardModifier = createJsonModifier(async function* (
     await db
       .insert(splashinTarget)
       .values(
-        json.targets.map((target) => ({
+        originalJson.targets.map((target) => ({
           id: crypto.randomUUID(),
-          userId: json.currentPlayer.id,
+          userId: originalJson.currentPlayer.id,
           targetId: target.id,
-          round: json.round.idx.toString(),
+          round: originalJson.round.idx.toString(),
           source: "proxy" as const,
         })),
       )
