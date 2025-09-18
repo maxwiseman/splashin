@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Volantir",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Volantir",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
