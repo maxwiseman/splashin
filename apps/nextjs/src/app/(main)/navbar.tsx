@@ -98,7 +98,7 @@ export function Navbar() {
             )}
           </div>
         </div>
-        <div className="flex w-full divide-x border-t [&>*]:bg-none [&>*:last-child]:border-r">
+        <div className="flex w-full divide-x overflow-x-scroll border-t [&>*]:bg-none [&>*:last-child]:border-r">
           {tabs
             .filter((tab) =>
               // tab.permissions
