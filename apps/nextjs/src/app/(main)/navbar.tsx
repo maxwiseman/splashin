@@ -30,6 +30,11 @@ const tabs: {
     permissions: ["view-map"],
   },
   {
+    label: "Notifications",
+    href: "/notifications",
+    permissions: ["set-notifications"],
+  },
+  {
     label: "Location",
     href: "/",
     allowSubPaths: false,
@@ -62,7 +67,7 @@ export function Navbar() {
 
   return (
     <div className="flex w-full justify-center">
-      <div className="bg-background/80 fixed top-0 z-50 flex w-full max-w-4xl flex-col justify-between border-x border-b backdrop-blur-md">
+      <div className="bg-background/90 fixed top-0 z-50 flex w-full max-w-4xl flex-col justify-between border-x border-b backdrop-blur-sm">
         <div className="flex h-16 w-full items-center justify-between px-4 py-4">
           <Link
             prefetch

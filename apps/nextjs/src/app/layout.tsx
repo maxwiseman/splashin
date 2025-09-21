@@ -50,7 +50,11 @@ const geistMono = Geist_Mono({
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   return (
-    <html className="size-full" lang="en" suppressHydrationWarning>
+    <html
+      className="size-full overscroll-none md:overscroll-auto"
+      lang="en"
+      suppressHydrationWarning
+    >
       {/* <Head>
         <link
           href="https://api.mapbox.com/mapbox-gl-js/v1.10.1/mapbox-gl.css"

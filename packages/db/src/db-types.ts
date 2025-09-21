@@ -4,4 +4,5 @@ export type Permissions =
   | "pause-location"
   | "edit-location"
   | "view-targets"
-  | "fake-targets";
+  | "fake-targets"
+  | "set-notifications";

@@ -13,8 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@splashin/ui/card";
+import { Input } from "@splashin/ui/input";
 
 import { PlayerMap } from "~/components/player-map";
+import { MapSearch } from "./map-search";
 
 export function MapClient({
   users,
@@ -34,9 +36,10 @@ export function MapClient({
   return (
     <>
       <PlayerMap users={awaitedUsers} onUserSelect={setSelectedUserId} />
-      {selectedUser && (
-        <div className="pointer-events-none fixed top-[7.125rem] right-4 bottom-4 flex w-1/4 min-w-sm flex-col justify-end">
-          <Card className="bg-background/80 pointer-events-auto w-full rounded-none shadow-none backdrop-blur-md">
+      <div className="pointer-events-none fixed top-[7.125rem] right-4 bottom-4 flex w-sm max-w-[calc(100vw-2rem)] flex-col justify-end gap-2 [&>*]:pointer-events-auto">
+        <MapSearch users={awaitedUsers} onUserSelect={setSelectedUserId} />
+        {selectedUser && (
+          <Card className="bg-background/90 w-full rounded-none shadow-none backdrop-blur-sm">
             <CardHeader>
               <CardTitle>
                 {`${selectedUser.firstName} ${selectedUser.lastName}`}
@@ -48,8 +51,8 @@ export function MapClient({
               </CardDescription>
             </CardHeader>
           </Card>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
