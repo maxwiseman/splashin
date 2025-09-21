@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { splashinTeam, splashinUser } from "@splashin/db/schema";
 import { Input } from "@splashin/ui/input";
+
+import { fuzzySubsequence } from "~/utils/fuzzy-search";
 
 export function MapSearch({
   users,
@@ -15,15 +17,41 @@ export function MapSearch({
   onUserSelect: (userId: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const filteredUsers = users.filter(
-    (user) =>
-      user.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(search.toLowerCase()),
-  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const filteredUsers = users
+    .map((user) => ({
+      ...user,
+      score:
+        Math.max(
+          fuzzySubsequence(search, `${user.firstName} ${user.lastName}`, {
+            caseSensitive: false,
+          })?.score ?? 0,
+          0,
+        ) +
+        Math.max(
+          fuzzySubsequence(search, user.team.name, { caseSensitive: false })
+            ?.score ?? 0,
+          0,
+        ),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .filter((user) => user.score > 0)
+    .reverse();
+
+  // Scroll to bottom whenever search query changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [search]);
+
   return (
     <div className="relative flex h-0 max-h-max grow flex-col">
       {search.length > 0 && (
-        <div className="bg-background/90 divide-y overflow-y-scroll rounded-none border border-b-0 shadow-none backdrop-blur-sm">
+        <div
+          ref={scrollRef}
+          className="bg-background/90 divide-y overflow-y-scroll rounded-none border border-b-0 shadow-none backdrop-blur-sm"
+        >
           {filteredUsers.map((user) => (
             <div
               onClick={() => {
