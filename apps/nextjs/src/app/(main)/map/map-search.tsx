@@ -47,7 +47,7 @@ export function MapSearch({
 
   return (
     <div className="relative flex h-0 max-h-max grow flex-col">
-      {search.length > 0 && (
+      {search.length > 0 && filteredUsers.length > 0 && (
         <div
           ref={scrollRef}
           className="bg-background/90 divide-y overflow-y-scroll rounded-none border border-b-0 shadow-none backdrop-blur-sm"
@@ -72,7 +72,7 @@ export function MapSearch({
         </div>
       )}
       <Input
-        className="bg-background/90 h-12 shrink-0 rounded-none shadow-none backdrop-blur-sm"
+        className="bg-background/90 h-12 shrink-0 rounded-none text-base shadow-none backdrop-blur-sm placeholder:text-sm"
         placeholder="Search..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
