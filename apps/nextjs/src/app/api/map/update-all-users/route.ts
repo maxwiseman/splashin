@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { and, eq, isNotNull } from "@splashin/db";
 import { db } from "@splashin/db/client";
@@ -47,22 +48,28 @@ export async function GET() {
   ).then((res) => res.json())) as LocationById[];
   console.log(data);
 
-  await db.transaction(async (tx) => {
-    for (const userLoc of data) {
-      await tx
-        .update(splashinUser)
-        .set({
-          lastLocation: { x: userLoc.l, y: userLoc.lo },
-          locationUpdatedAt: new Date(userLoc.up),
-          lastActivityType: userLoc.a.replace(
-            "on_foot",
-            "walking",
-          ) as "walking",
-        })
-        .where(eq(splashinUser.id, userLoc.u));
-    }
+  after(async () => {
+    await db.transaction(async (tx) => {
+      for (const userLoc of data) {
+        await tx
+          .update(splashinUser)
+          .set({
+            lastLocation: { x: userLoc.l, y: userLoc.lo },
+            locationUpdatedAt: new Date(userLoc.up),
+            lastActivityType: userLoc.a.replace(
+              "on_foot",
+              "walking",
+            ) as "walking",
+            locationAccuracy: userLoc.ac,
+            speed: userLoc.s,
+            batteryLevel: userLoc.bl,
+          })
+          .where(eq(splashinUser.id, userLoc.u));
+      }
+    });
+    revalidatePath("/map");
   });
-  revalidatePath("/map");
+
   return new Response(JSON.stringify(data));
 }
 

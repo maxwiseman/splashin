@@ -28,6 +28,9 @@ export const splashinUser = pgTable("splashin_user", () => ({
   authToken: p.text(),
   apiKey: p.text(),
   locationUpdatedAt: p.timestamp(),
+  locationAccuracy: p.numeric({ mode: "number" }),
+  speed: p.numeric({ mode: "number" }),
+  batteryLevel: p.numeric({ mode: "number" }),
   locationPausedUntil: p.timestamp(),
   fakeTargetTeamId: p
     .text()
