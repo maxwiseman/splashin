@@ -1,3 +1,5 @@
+import { revalidatePath } from "next/cache";
+
 import { and, eq, isNotNull } from "@splashin/db";
 import { db } from "@splashin/db/client";
 import { splashinUser } from "@splashin/db/schema";
@@ -60,6 +62,7 @@ export async function GET() {
         .where(eq(splashinUser.id, userLoc.u));
     }
   });
+  revalidatePath("/map");
   return new Response(JSON.stringify(data));
 }
 

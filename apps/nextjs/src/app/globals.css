@@ -133,4 +133,7 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  .mapboxgl-ctrl {
+    @apply invisible;
+  }
 }

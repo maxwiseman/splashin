@@ -109,7 +109,15 @@ export function Navbar() {
               //     ),
               //   )
               //   : true,
-              tab.permissions ? checkPermissions(tab.permissions) : true,
+              tab.matcher
+                ? tab.matcher.test(pathname)
+                : tab.allowSubPaths
+                  ? pathname.startsWith(tab.href)
+                  : pathname === tab.href
+                    ? true
+                    : tab.permissions
+                      ? checkPermissions(tab.permissions)
+                      : true,
             )
             .map((tab) => (
               <Button
