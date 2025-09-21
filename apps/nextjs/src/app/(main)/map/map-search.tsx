@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 
 import type { splashinTeam, splashinUser } from "@splashin/db/schema";
 import { Input } from "@splashin/ui/input";
 
 import { fuzzySubsequence } from "~/utils/fuzzy-search";
+import { MapContext } from "./map.client";
 
 export function MapSearch({
   users,
@@ -16,6 +17,7 @@ export function MapSearch({
   })[];
   onUserSelect: (userId: string) => void;
 }) {
+  const { mapRef } = useContext(MapContext);
   const [search, setSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const filteredUsers = users
@@ -57,6 +59,17 @@ export function MapSearch({
               onClick={() => {
                 onUserSelect(user.id);
                 setSearch("");
+                if (
+                  mapRef.current &&
+                  user.lastLocation?.x &&
+                  user.lastLocation.y
+                ) {
+                  mapRef.current.flyTo({
+                    center: [user.lastLocation.y, user.lastLocation.x],
+                    zoom: 15,
+                    speed: 2,
+                  });
+                }
               }}
               className="cursor-pointer p-2 px-3"
               key={user.id}

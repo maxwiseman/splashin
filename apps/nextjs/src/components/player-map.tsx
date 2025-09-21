@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useContext, useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { useTheme } from "next-themes";
 
@@ -8,6 +8,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import type { splashinTeam, splashinUser } from "@splashin/db/schema";
 
+import { MapContext } from "~/app/(main)/map/map.client";
 import { env } from "~/env";
 
 export function PlayerMap({
@@ -19,8 +20,9 @@ export function PlayerMap({
   })[];
   onUserSelect?: (userId: string) => void;
 }) {
+  const { mapRef } = useContext(MapContext);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  // const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const { resolvedTheme } = useTheme();
 

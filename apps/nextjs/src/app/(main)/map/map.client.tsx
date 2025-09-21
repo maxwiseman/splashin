@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import type { RefObject } from "react";
+import { createContext, use, useMemo, useRef, useState } from "react";
 
 import type {
   activityType,
@@ -13,10 +14,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@splashin/ui/card";
-import { Input } from "@splashin/ui/input";
 
 import { PlayerMap } from "~/components/player-map";
 import { MapSearch } from "./map-search";
+
+export const MapContext = createContext<{
+  mapRef: RefObject<mapboxgl.Map | null>;
+}>({
+  mapRef: { current: null },
+});
 
 export function MapClient({
   users,
@@ -33,8 +39,10 @@ export function MapClient({
     return awaitedUsers.find((user) => user.id === selectedUserId);
   }, [awaitedUsers, selectedUserId]);
 
+  const map = useRef<mapboxgl.Map | null>(null);
+
   return (
-    <>
+    <MapContext.Provider value={{ mapRef: map }}>
       <PlayerMap users={awaitedUsers} onUserSelect={setSelectedUserId} />
       <div className="pointer-events-none fixed top-[7.125rem] right-4 bottom-4 flex w-sm max-w-[calc(100vw-2rem)] flex-col justify-end gap-2 [&>*]:pointer-events-auto">
         <MapSearch users={awaitedUsers} onUserSelect={setSelectedUserId} />
@@ -53,7 +61,7 @@ export function MapClient({
           </Card>
         )}
       </div>
-    </>
+    </MapContext.Provider>
   );
 }
 
