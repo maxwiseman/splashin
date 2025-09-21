@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Proxy } from "http-mitm-proxy";
 
 import { eq } from "@splashin/db";
@@ -8,11 +9,13 @@ import {
   gameDashboardHandler,
   gameDashboardMatcher,
 } from "./handlers/game-dashboard";
-import {
-  getLocationByIdHandler,
-  getLocationByIdMatcher,
-} from "./handlers/get-location-by-id";
+// import {
+//   getLocationByIdHandler,
+//   getLocationByIdMatcher,
+// } from "./handlers/get-location-by-id";
 import { playersHandler, playersMatcher } from "./handlers/players";
+
+export * from "./handlers/types";
 
 const host = "0.0.0.0";
 const port = 9090;
@@ -51,8 +54,9 @@ function isIP(str: string): boolean {
 function getBasicProxyAuthCredentials(req: {
   headers: Record<string, string | string[] | undefined>;
 }): { userId: string; secret: string } | null {
-  const header = (req?.headers?.["proxy-authorization"] ??
-    req?.headers?.["authorization"]) as string | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const header = (req.headers?.["proxy-authorization"] ??
+    req.headers.authorization) as string | undefined;
   if (!header) return null;
   const [scheme, encoded] = header.split(" ");
   if (!/^basic$/i.test(scheme ?? "") || !encoded) return null;
@@ -69,12 +73,13 @@ function getBasicProxyAuthCredentials(req: {
 
 proxy.onError((ctx, err, errorKind) => {
   // ctx may be null
-  const url = ctx?.clientToProxyRequest?.url || "";
+  const url = ctx?.clientToProxyRequest.url ?? "";
   console.error(`${errorKind} on ${url}:`, err);
 });
 
 proxy.onConnect(async (req, socket, _: Buffer, callback) => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
     const creds = getBasicProxyAuthCredentials(req as any);
     if (!creds) {
       console.error("[AUTH][CONNECT] no credentials");
@@ -117,7 +122,9 @@ proxy.onConnect(async (req, socket, _: Buffer, callback) => {
         "Content-Length: 0\r\n" +
         "\r\n";
       socket.write(res);
-    } catch {}
+    } catch (err) {
+      console.error(err);
+    }
     socket.end();
   }
 });
@@ -148,11 +155,10 @@ proxy.onRequest(async (ctx, callback) => {
     }
     const userId = creds.userId;
     console.log(
-      `[${ctx.clientToProxyRequest.method}][${userId}] ${
-        host
+      `[${ctx.clientToProxyRequest.method}][${userId}] ${host
       }${ctx.clientToProxyRequest.url?.slice(0, 50)}`,
     );
-    if (headers.authorization || headers.apiKey) {
+    if (headers.Authorization || headers.apikey) {
       try {
         await db
           .update(splashinUser)
@@ -170,7 +176,7 @@ proxy.onRequest(async (ctx, callback) => {
     if (gameDashboardMatcher.test(url ?? "")) {
       console.log("Detected dashboard request");
       try {
-        await gameDashboardHandler(ctx, callback);
+        gameDashboardHandler(ctx, callback);
       } catch (err) {
         console.error("[HANDLER][GAME_DASHBOARD] error", err);
         return callback();
@@ -188,7 +194,7 @@ proxy.onRequest(async (ctx, callback) => {
     } else if (playersMatcher.test(url ?? "")) {
       console.log("Detected players request");
       try {
-        await playersHandler(ctx, callback);
+        playersHandler(ctx, callback);
       } catch (err) {
         console.error("[HANDLER][PLAYERS] error", err);
         return callback();

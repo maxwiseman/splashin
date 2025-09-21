@@ -8,6 +8,7 @@ export const activityType = pgEnum("splashin_activity_type", [
   "in_vehicle",
   "walking",
   "still",
+  "on_bicycle",
   "unknown",
 ]);
 export const splashinUser = pgTable("splashin_user", () => ({
@@ -22,6 +23,7 @@ export const splashinUser = pgTable("splashin_user", () => ({
     mode: "xy",
     srid: 4326,
   }),
+  hasPremium: p.boolean().notNull().default(false),
   lastActivityType: activityType(),
   authToken: p.text(),
   apiKey: p.text(),

@@ -55,7 +55,9 @@
     "AUTH_DISCORD_SECRET",
     "AUTH_REDIRECT_PROXY_URL",
     "AUTH_SECRET",
-    "PORT"
+    "PORT",
+    "APPROVED_HOSTS",
+    "NEXT_PUBLIC_MAPBOX_TOKEN"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

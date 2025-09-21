@@ -1,6 +1,8 @@
 "use client";
 
-import { splashinTeam, splashinUser } from "@splashin/db/schema";
+import { use } from "react";
+
+import type { splashinTeam, splashinUser } from "@splashin/db/schema";
 
 import { PlayerMap } from "~/components/player-map";
 
@@ -13,9 +15,10 @@ export function MapClient({
     })[]
   >;
 }) {
+  const awaitedUsers = use(users);
   return (
     <PlayerMap
-      users={users}
+      users={awaitedUsers}
       onUserSelect={(userId) => {
         window.alert(userId);
       }}
