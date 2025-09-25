@@ -46,7 +46,6 @@ export async function GET() {
     },
     // options,
   ).then((res) => res.json())) as LocationById[];
-  console.log(data);
 
   after(async () => {
     await db.transaction(async (tx) => {
@@ -65,6 +64,21 @@ export async function GET() {
             batteryLevel: userLoc.bl,
           })
           .where(eq(splashinUser.id, userLoc.u));
+      }
+      const dataUserIds = new Set(data.map((user) => user.u));
+      for (const userId of allUserIds) {
+        if (dataUserIds.has(userId.id)) continue;
+        await tx
+          .update(splashinUser)
+          .set({
+            lastActivityType: null,
+            locationAccuracy: null,
+            speed: null,
+            batteryLevel: null,
+            locationUpdatedAt: null,
+            lastLocation: null,
+          })
+          .where(eq(splashinUser.id, userId.id));
       }
     });
     revalidatePath("/map");

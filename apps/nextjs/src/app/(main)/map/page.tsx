@@ -3,9 +3,11 @@ import { Suspense } from "react";
 import type { splashinTeam, splashinUser } from "@splashin/db/schema";
 import { db } from "@splashin/db/client";
 
+import { updateAllUsers } from "./map-actions";
 import { MapClient } from "./map.client";
 
-export default function MapPage() {
+export default async function MapPage() {
+  await updateAllUsers();
   const users = db.query.splashinUser.findMany({
     with: { team: true },
   }) as Promise<
