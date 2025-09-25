@@ -95,7 +95,13 @@ export function MapClient({
 
         if (generation !== pollGenerationRef.current) return;
 
-        if (!result) return;
+        if (
+          !result ||
+          typeof result.l !== "number" ||
+          typeof result.lo !== "number" ||
+          typeof result.a !== "string"
+        )
+          return;
 
         setUsersState((prev) =>
           prev.map((u) =>

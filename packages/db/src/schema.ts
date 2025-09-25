@@ -7,6 +7,7 @@ import { user } from "./auth-schema";
 export const activityType = pgEnum("splashin_activity_type", [
   "in_vehicle",
   "walking",
+  "running",
   "still",
   "on_bicycle",
   "unknown",
