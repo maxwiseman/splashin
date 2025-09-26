@@ -124,6 +124,11 @@ export function PlayerMap({
       if (map.getLayer("accuracy-circle-fill")) {
         map.setPaintProperty("accuracy-circle-fill", "fill-color", fillColor);
         map.setPaintProperty("accuracy-circle-fill", "fill-opacity", 0.25);
+        map.setPaintProperty(
+          "accuracy-circle-fill",
+          "fill-emissive-strength",
+          1,
+        );
       }
       if (map.getLayer("accuracy-circle-stroke")) {
         map.setPaintProperty(
@@ -132,6 +137,11 @@ export function PlayerMap({
           strokeColor,
         );
         map.setPaintProperty("accuracy-circle-stroke", "line-width", 1);
+        map.setPaintProperty(
+          "accuracy-circle-stroke",
+          "line-emissive-strength",
+          1,
+        );
       }
       return;
     }
@@ -149,6 +159,7 @@ export function PlayerMap({
         paint: {
           "fill-color": fillColor,
           "fill-opacity": 0.25,
+          "fill-emissive-strength": 1,
         },
       });
       map.addLayer({
@@ -158,6 +169,7 @@ export function PlayerMap({
         paint: {
           "line-color": strokeColor,
           "line-width": 1,
+          "line-emissive-strength": 1,
         },
       });
     } catch (error) {

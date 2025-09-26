@@ -95,13 +95,10 @@ export function MapClient({
 
         if (generation !== pollGenerationRef.current) return;
 
-        if (
-          !result ||
-          typeof result.l !== "number" ||
-          typeof result.lo !== "number" ||
-          typeof result.a !== "string"
-        )
+        if (!result?.l || !result.lo || !result.a) {
+          console.log("Invalid result", result);
           return;
+        }
 
         setUsersState((prev) =>
           prev.map((u) =>
