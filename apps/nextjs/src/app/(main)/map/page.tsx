@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import type { splashinTeam, splashinUser } from "@splashin/db/schema";
+import { isNotNull } from "@splashin/db";
 import { db } from "@splashin/db/client";
 
 import { updateAllUsers } from "./map-actions";
@@ -10,6 +11,7 @@ export default async function MapPage() {
   await updateAllUsers();
   const users = db.query.splashinUser.findMany({
     with: { team: true },
+    where: (users) => isNotNull(users.lastLocation),
   }) as Promise<
     (typeof splashinUser.$inferSelect & {
       team: typeof splashinTeam.$inferSelect;

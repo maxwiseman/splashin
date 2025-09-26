@@ -21,6 +21,7 @@ export function MapSearch({
   const [search, setSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const filteredUsers = users
+    .filter((user) => user.lastLocation !== null)
     .map((user) => ({
       ...user,
       score:
